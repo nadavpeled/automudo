@@ -1,7 +1,6 @@
 import requests
 
 from automudo import config
-from automudo.ui import cui
 from automudo.music_metadata_db.base import AlbumMetadata, MusicMetadataDB
 
 
@@ -26,7 +25,7 @@ class DiscogsMetadataDB(MusicMetadataDB):
 
             search_results = search_response['results']
             for result in search_results:
-                # Remove ", the" from the artist name
+                # remove ", the" from the artist name
                 i = result['title'].lower().find(', the')
                 if i > 0:
                     j = result['title'].find(' - ', i)
