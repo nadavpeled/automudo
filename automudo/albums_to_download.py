@@ -9,6 +9,13 @@ from automudo import config
 
 
 def normalize_bookmark_name(bookmark_name):
+    """
+    "Normalizes" a bookmark name, by performing the following:
+    1. lowercasing it
+    2. removing useless words from it (album, full album, youtube, ..)
+    3. removing non-alphanumeric characters
+    4. replacing multiple whitespaces with a single whitespace
+    """
     bookmark_name = bookmark_name.lower()
     # Remove non important strings and comments
     # (by comments I mean parentheses contents)
@@ -25,13 +32,26 @@ def normalize_bookmark_name(bookmark_name):
 
 def get_bookmarks_descriptions(music_bookmarks):
     return map(
-        lambda x_y: normalize_bookmark_name(x_y[0][-1]),
+        lambda bookmark: normalize_bookmark_name(bookmark[0][-1]),
         music_bookmarks
         )
 
 
 def find_possible_album_matches_in_discogs(search_string,
                                            master_releases_only=True):
+    """
+    Finds albums whose title is similar to the search string in discogs.
+
+    Parameters:
+        search_string - the search string
+        master_releases_only - should look for releases other than
+                               the very first release of each album
+
+    Returns:
+        An iterator of the search results,
+        where each result is a dict of album attributes
+        (title, date, genre, etc.)
+    """
     page_number = 1
     headers = {'User-Agent': config.USER_AGENT}
     params = {
@@ -63,6 +83,13 @@ def find_possible_album_matches_in_discogs(search_string,
 
 
 def get_list_of_albums_to_download(music_bookmarks):
+    """
+    Returns a list of albums to download given the user's music bookmarks.
+    Each item in this list is in the form (artist-name, album-name).
+
+    Note: interacts with the user for choosing a correct album name
+          from the metadata databases for each music bookmark
+    """
     for bookmark_description in get_bookmarks_descriptions(music_bookmarks):
         print("------------------------------------------")
         print("Looking for albums matching '{}'..".format(

@@ -6,6 +6,7 @@ from automudo.ui.autoselect_modes import AutoselectModes
 # Items shown per page (usually search results).
 ITEMS_PER_PAGE = 3
 
+
 # ALBUM METADATA RETRIEVAL SETTINGS
 
 # Used for Discogs queries. Please get your own key:

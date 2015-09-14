@@ -9,9 +9,10 @@
 - [ ] Look for discography when there are no matches in the tracker
 - [ ] Remove bookmarks of already downloaded albums
 - [ ] Change the configuration file format
-- [ ] Unix support
+- [x] Unix support
 - [ ] Get a list of music bookmarks from browsers other than Chrome
 - [ ] Get a list of albums from youtube playlist
 - [ ] More trackers
+- [ ] Support magnet links
 - [ ] More music metadata databases (musicbrainz, freedb, ..)
 - [ ] Minimal GUI

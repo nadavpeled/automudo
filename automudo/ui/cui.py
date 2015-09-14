@@ -9,10 +9,16 @@ from automudo.ui.autoselect_modes import AutoselectModes
 
 
 class NoMoreItemsError(IndexError):
+    """
+        There are no more items to select from.
+    """
     pass
 
 
-def getch():
+def get_char_from_terminal():
+    """
+        Reads a single char from the terminal and returns it
+    """
     if os.name.startswith("nt"):  # Windows
         import msvcrt
         return msvcrt.getche().decode('utf-8')
@@ -27,11 +33,31 @@ def getch():
             ch = sys.stdin.read(1)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch.decode('utf-8')
+        return ch
 
 
 def let_user_choose_item(items_iterator, items_per_page,
                          item_printer, prompt, autoselect_mode):
+    """
+        Lets the user choose an item from a given iterator
+        and returns the chosen item.
+
+        Parameters:
+            items_iterator - iterator of the items shown to the user
+            items_per_page - items shown in each items page
+            item_printer - function that prints a given item
+            prompt - the user prompt shown after each items page
+            autoselect_mode - items autoselection mode
+
+        Returns:
+            The chosen item.
+            If the user has chosen to skip (avoid) choosing an item,
+            returns None.
+
+        Raises:
+            NoMoreItemsError - there are no more items that
+                               the user can choose from.
+    """
     # Note: this program is for the lazy, hench the getch solution
     #       and this assertion, which is needed because of it.
     assert items_per_page < 10
@@ -58,7 +84,7 @@ def let_user_choose_item(items_iterator, items_per_page,
             print(prompt,
                   "(Enter - 1, n - next, s - skip, q - quit): ",
                   end=" ", flush=True)
-            c = getch().lower()
+            c = get_char_from_terminal().lower()
             print()
 
             if c == 'n':

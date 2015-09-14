@@ -9,8 +9,15 @@ from automudo.albums_to_download import get_list_of_albums_to_download
 from automudo import config
 
 
-def get_list_of_topics_to_download(album_titles, tracker):
-    for album_title in album_titles:
+def get_list_of_topics_to_download(albums_titles, tracker):
+    """
+    Returns a list of torrent identifiers in the tracker
+    for torrents of the given albums.
+
+    Note: interacts with the user for selecting
+          a matching torrent for each album
+    """
+    for album_title in albums_titles:
         print("Looking for torrents matching '{}'..".format(
             cui.get_printable_string(" - ".join(album_title))
             ))
@@ -40,13 +47,21 @@ def get_list_of_topics_to_download(album_titles, tracker):
             yield (topic_id, album_title)
 
 
-def download_albums_torrents(album_titles, tracker, torrents_dir):
-    topics_list = get_list_of_topics_to_download(album_titles, tracker)
+def download_albums_torrents(albums_titles, tracker, torrents_dir):
+    """
+    Downloads torrents for music albums.
+
+    Parameters:
+        albums_titles - the titles of the albums to download
+        tracker - the tracker to download from
+        torrents_dir - the directory into which the torrents will be saved
+    """
+    topics_list = get_list_of_topics_to_download(albums_titles, tracker)
     for (topic_id, album_title) in topics_list:
         torrent_file_name = re.sub(
             r'[\/:*?"<>|]', '_',
-            " - ".join(album_title) + ' [{}].torrent'.format(topic_id),
-            re.UNICODE)
+            " - ".join(album_title) + ' [{}].torrent'.format(topic_id)
+            )
         torrent_file_path = os.path.join(torrents_dir, torrent_file_name)
         with open(torrent_file_path, "wb") as f:
             f.write(tracker.get_torrent_file_contents(topic_id))
@@ -54,13 +69,15 @@ def download_albums_torrents(album_titles, tracker, torrents_dir):
 
 def main():
     user_music_bookmarks = get_user_music_bookmarks()
-    album_titles = get_list_of_albums_to_download(user_music_bookmarks)
+    albums_titles = get_list_of_albums_to_download(user_music_bookmarks)
 
     tracker = Rutracker(config.RUTRACKER_USERNAME,
                         config.RUTRACKER_PASSWORD,
                         config.USER_AGENT)
 
-    download_albums_torrents(album_titles, tracker, config.TORRENTS_DIR)
+    torrents_dir = os.path.expanduser(config.TORRENTS_DIR)
+    os.makedirs(torrents_dir, exist_ok=True)
+    download_albums_torrents(albums_titles, tracker, torrents_dir)
 
 if __name__ == '__main__':
     main()

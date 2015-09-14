@@ -5,6 +5,9 @@ import itertools
 
 
 class FileNotFoundError(Exception):
+    """
+        File not found exception.
+    """
     pass
 
 
@@ -13,19 +16,19 @@ def get_user_chrome_bookmarks():
         Returns Chrome's (or Chromium's) bookmarks JSON parsed.
         Assumes the user's chrome profile is 'Default'.
     """
-    chrome_bookmarks_file_possible_paths = [
-        "~/.config/google-chrome/Default/Bookmarks",
-        "~/.config/chromium/Default/Bookmarks"
-    ]
+    possible_bookmarks_file_paths = map(
+        os.path.expanduser,
+        ["~/.config/google-chrome/Default/Bookmarks",
+         "~/.config/chromium/Default/Bookmarks"]
+        )
     if os.name.startswith("nt"):  # Windows
-        chrome_bookmarks_file_possible_paths = [
+        possible_bookmarks_file_paths = [
             os.path.join(os.getenv('LOCALAPPDATA'),
-                         "Google", "Chrome",
-                         "User Data", "Default", "Bookmarks")
+                         r"Google\Chrome\User Data\Default\Bookmarks")
         ]
 
     bookmarks = None
-    for path in chrome_bookmarks_file_possible_paths:
+    for path in possible_bookmarks_file_paths:
         try:
             with open(path, "rb") as bookmarks_file:
                 bookmarks = json.loads(bookmarks_file.read().decode('utf-8'))
@@ -41,15 +44,16 @@ def get_user_chrome_bookmarks():
 
 def parse_chrome_bookmarks(bookmark_node):
     """
-        Given a node in the Chrome bookmarks JSON,
-        returns a list of the chrome bookmarks in this format:
+        Returns a list of the chrome bookmarks under the given bookmarks node
+        in this format:
         [
             (["path", "to", "bookmark"], "<URL>"),
             (["path", "to", "bookmark2"], "<URL>"),
             ...
         ].
-        When given the root of the JSON, returns the bookmarks
-        from the bookmarks bar.
+
+        Note: When given the root of the JSON,
+              returns the bookmarks from the bookmarks bar.
     """
     if 'roots' in bookmark_node:
         return parse_chrome_bookmarks(bookmark_node['roots']['bookmark_bar'])
@@ -73,7 +77,7 @@ def parse_chrome_bookmarks(bookmark_node):
 def get_music_bookmarks_from_bookmarks_list(all_bookmarks):
     """
         Given a list of bookmarks in the format described in
-        parse_chrome_bookmarks, returns a list of bookmarks
+        parse_chrome_bookmarks, returns a list of the bookmarks
         which contain 'music' as a node in their path
     """
     return [b for b in all_bookmarks if 'music' in map(str.lower, b[0])]

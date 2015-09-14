@@ -2,7 +2,19 @@ from automudo.trackers.tracker import Tracker, TrackerLoginError
 
 
 class Rutracker(Tracker):
+    """
+    An implementation of the Tracker interface for rutracker.org
+    """
     def __init__(self, username, password, user_agent):
+        """
+        Initializes the Rutracker object.
+
+        Parameters:
+            username - username for the rutracker account
+            password - password for the rutracker account
+            user_agent - the user agent used for
+                         HTTP requests from the tracker
+        """
         self.__username = username
         self.__password = password
         super(Rutracker, self).__init__(user_agent)
