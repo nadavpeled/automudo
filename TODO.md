@@ -4,7 +4,6 @@
 - [x] Find album names from bookmark names (Discogs only)
 - [x] Download albums from Tracker (Rutracker only)
 - [x] setup.py
-- [ ] Reduce tight coupling
 - [ ] Skip albums which already have local torrents
 - [ ] Look for discography when there are no matches in the tracker
 - [ ] Remove bookmarks of already downloaded albums
