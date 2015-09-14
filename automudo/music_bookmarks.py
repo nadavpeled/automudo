@@ -85,9 +85,20 @@ def get_music_bookmarks_from_bookmarks_list(all_bookmarks):
 
 def get_user_music_bookmarks():
     """
+        Returns the list of music bookmarks that the user has.
+
         Assumes the user uses chrome.
         Might be rewrited later on to support other browsers.
     """
     chrome_bookmarks = get_user_chrome_bookmarks()
     parsed_chrome_bookmarks = parse_chrome_bookmarks(chrome_bookmarks)
     return get_music_bookmarks_from_bookmarks_list(parsed_chrome_bookmarks)
+
+
+def get_user_music_bookmarks_titles():
+    """
+        Returns the titles that were given to the user's music bookmarks.
+    """
+    return [bookmark_path[-1]
+            for (bookmark_path, bookmark_url)
+            in get_user_music_bookmarks()]

@@ -4,7 +4,7 @@ import sys
 
 from automudo.ui import cui
 from automudo.trackers.rutracker import Rutracker
-from automudo.music_bookmarks import get_user_music_bookmarks
+from automudo.music_bookmarks import get_user_music_bookmarks_titles
 from automudo.albums_to_download import find_albums_to_download
 from automudo import config
 
@@ -70,8 +70,7 @@ def download_albums_torrents(albums_titles, tracker, torrents_dir):
 
 
 def main():
-    user_music_bookmarks = get_user_music_bookmarks()
-    albums_titles = find_albums_to_download(user_music_bookmarks)
+    albums_titles = find_albums_to_download(get_user_music_bookmarks_titles())
 
     tracker = Rutracker(config.RUTRACKER_USERNAME,
                         config.RUTRACKER_PASSWORD,

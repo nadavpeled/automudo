@@ -8,33 +8,26 @@ from automudo.ui import cui
 from automudo import config
 
 
-def normalize_bookmark_name(bookmark_name):
+def normalize_album_search_string(search_string):
     """
-    "Normalizes" a bookmark name, by performing the following:
+    "Normalizes" an album search string, by performing the following:
     1. lowercasing it
     2. removing useless words from it (album, full album, youtube, ..)
     3. removing non-alphanumeric characters
     4. replacing multiple whitespaces with a single whitespace
     """
-    bookmark_name = bookmark_name.lower()
+    search_string = search_string.lower()
     # Remove non important strings and comments
     # (by comments I mean parentheses contents)
-    bookmark_name = re.sub(
+    search_string = re.sub(
         r"(\([^\)]*\)|\({^\}]*\}|\[{^\]*\]|youtube|rdio|full album|album)",
-        "", bookmark_name
+        "", search_string
         )
     # Remove anything that is not alphanumeric
-    bookmark_name = re.sub(r"[^\w\s]+", "", bookmark_name)
+    search_string = re.sub(r"[^\w\s]+", "", search_string)
     # Replace sequences of spaces and tabs with a single space
-    bookmark_name = re.sub(r"\s+", " ", bookmark_name)
-    return bookmark_name.strip()
-
-
-def get_bookmarks_descriptions(music_bookmarks):
-    return map(
-        lambda bookmark: normalize_bookmark_name(bookmark[0][-1]),
-        music_bookmarks
-        )
+    search_string = re.sub(r"\s+", " ", search_string)
+    return search_string.strip()
 
 
 def find_possible_album_matches_in_discogs(search_string,
@@ -82,21 +75,22 @@ def find_possible_album_matches_in_discogs(search_string,
             break  # no more pages
 
 
-def find_albums_to_download(music_bookmarks):
+def find_albums_to_download(albums_search_strings):
     """
-    Returns a list of albums matching the user's music bookmarks.
+    Returns a list of albums matching the given search strings.
     Each item in this list is in the form (artist-name, album-name).
 
     Note: interacts with the user for choosing a correct album name
-          from the metadata databases for each music bookmark
+          from the metadata databases for each searched album
     """
-    for bookmark_description in get_bookmarks_descriptions(music_bookmarks):
+    for search_string in albums_search_strings:
+        search_string = normalize_album_search_string(search_string)
         print("------------------------------------------")
         print("Looking for albums matching '{}'..".format(
-            cui.get_printable_string(bookmark_description)
+            cui.get_printable_string(search_string)
             ))
         possible_album_matches = find_possible_album_matches_in_discogs(
-            bookmark_description,
+            search_string,
             config.MASTER_RELEASES_ONLY
             )
 
