@@ -2,14 +2,56 @@ import os
 import re
 import sys
 
-from automudo.ui import cui
-from automudo.trackers.rutracker import Rutracker
-from automudo.music_bookmarks import get_user_music_bookmarks_titles
-from automudo.albums_to_download import find_albums_to_download
 from automudo import config
+from automudo.ui import cui
+from automudo.music_bookmarks import get_user_music_bookmarks_titles
+from automudo.music_metadata_db.discogs import DiscogsMetadataDB
+from automudo.trackers.rutracker import Rutracker
 
 
-def find_torrents_of_albums(albums_titles, tracker):
+def find_albums_to_download(albums_search_strings, metadata_db):
+    """
+    Returns a list of albums matching the given search strings
+    in the given music metadata database.
+
+    Note: interacts with the user for choosing a correct album name
+          from the music metadata databases for each searched album
+    """
+    for search_string in albums_search_strings:
+        print("------------------------------------------")
+        print("Looking for albums matching '{}'..".format(
+            cui.get_printable_string(search_string)
+            ))
+        possible_album_matches = metadata_db.find_album(
+            search_string,
+            config.MASTER_RELEASES_ONLY
+            )
+
+        def print_album_details(result_number, album):
+            print("[Album {}]".format(result_number))
+            print("artist:", cui.get_printable_string(album.artist))
+            print("title:", cui.get_printable_string(album.title))
+            print("date:", album.date if album.date else "?")
+            print("genres:", ",".join(album.genres) if album.genres else "?")
+            print()
+
+        try:
+            album = cui.let_user_choose_item(
+                possible_album_matches,
+                config.ITEMS_PER_PAGE,
+                print_album_details,
+                "Please choose an album",
+                config.ALBUM_METADATA_AUTOSELECTION_MODE
+                )
+        except cui.NoMoreItemsError:
+            print("No matching albums found.")
+            print()
+            continue
+        if album:
+            yield album
+
+
+def find_torrents_of_albums(albums, tracker):
     """
     Finds torrents of the given albums in the given tracker.
     Returns a list of tuples in the form (torrent-id, album-title).
@@ -17,11 +59,12 @@ def find_torrents_of_albums(albums_titles, tracker):
     Note: interacts with the user for selecting
           a matching torrent for each album
     """
-    for album_title in albums_titles:
+    for album in albums:
         print("Looking for torrents matching '{}'..".format(
-            cui.get_printable_string(" - ".join(album_title))
+            cui.get_printable_string(" - ".join([album.artist, album.title]))
             ))
-        available_torrents = tracker.find_torrents_by_title(album_title)
+        available_torrents = tracker.find_torrents_by_keywords([album.artist,
+                                                                album.title])
 
         def print_torrent_description(result_number, result):
             _, torrent_title = result
@@ -46,23 +89,24 @@ def find_torrents_of_albums(albums_titles, tracker):
 
         if chosen_item:
             torrent_id, _ = chosen_item
-            yield (torrent_id, album_title)
+            yield (torrent_id, album)
 
 
-def download_albums_torrents(albums_titles, tracker, torrents_dir):
+def download_albums_torrents(albums, tracker, torrents_dir):
     """
     Downloads torrents for music albums.
 
     Parameters:
-        albums_titles - the titles of the albums to download
+        albums - the metadata of the albums to download
         tracker - the tracker to download from
         torrents_dir - the directory into which the torrents will be saved
     """
-    torrents = find_torrents_of_albums(albums_titles, tracker)
-    for (torrent_id, album_title) in torrents:
+    torrents = find_torrents_of_albums(albums, tracker)
+    for (torrent_id, album) in torrents:
         torrent_file_name = re.sub(
             r'[\/:*?"<>|]', '_',
-            " - ".join(album_title) + ' [{}].torrent'.format(torrent_id)
+            "{} - {} [{}].torrent".format(album.artist, album.title,
+                                          torrent_id)
             )
         torrent_file_path = os.path.join(torrents_dir, torrent_file_name)
         with open(torrent_file_path, "wb") as f:
@@ -70,7 +114,8 @@ def download_albums_torrents(albums_titles, tracker, torrents_dir):
 
 
 def main():
-    albums_titles = find_albums_to_download(get_user_music_bookmarks_titles())
+    albums = find_albums_to_download(get_user_music_bookmarks_titles(),
+                                     DiscogsMetadataDB)
 
     tracker = Rutracker(config.RUTRACKER_USERNAME,
                         config.RUTRACKER_PASSWORD,
@@ -78,7 +123,7 @@ def main():
 
     torrents_dir = os.path.expanduser(config.TORRENTS_DIR)
     os.makedirs(torrents_dir, exist_ok=True)
-    download_albums_torrents(albums_titles, tracker, torrents_dir)
+    download_albums_torrents(albums, tracker, torrents_dir)
 
 if __name__ == '__main__':
     main()

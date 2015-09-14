@@ -35,9 +35,9 @@ class Rutracker(Tracker):
             if not self._is_authenticated_user_response(response):
                 raise TrackerLoginError("Could not login to rutracker.")
 
-    def find_torrents_by_title(self, title):
-        url = 'http://rutracker.org/forum/tracker.php?nm="{}"+"{}"'
-        url = url.format(*title)
+    def find_torrents_by_keywords(self, keywords):
+        url = 'http://rutracker.org/forum/tracker.php?nm={}'
+        url = url.format("+".join(map('"{}"'.format, keywords)))
         response = self._http_request(url).decode('windows-1251')
         for line in response.splitlines():
             if ('tLink' in line) and ('viewtopic.php' in line):

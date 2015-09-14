@@ -62,6 +62,11 @@ def let_user_choose_item(items_iterator, items_per_page,
     #       and this assertion, which is needed because of it.
     assert items_per_page < 10
 
+    if not items_iterator:
+        raise NoMoreItemsError(
+            "let_user_choose_item: there are no items at all"
+            )
+
     page_number = 1
     while True:
         current_items = list(itertools.islice(items_iterator, items_per_page))

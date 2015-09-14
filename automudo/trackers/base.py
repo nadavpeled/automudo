@@ -83,10 +83,10 @@ class Tracker(object):
                 if login_attempts > self.MAX_LOGIN_ATTEMPTS:
                     raise e
 
-    def find_torrents_by_title(self, title):
+    def find_torrents_by_keywords(self, keywords):
         """
-        Finds torrents given a title and returns
-        their identifiers in the tracker.
+        Finds torrents given a keywords list
+        and returns their identifiers in the tracker.
         """
         raise NotImplementedError()
 
