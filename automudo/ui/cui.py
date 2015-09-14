@@ -106,4 +106,7 @@ def let_user_choose_item(items_iterator, items_per_page,
 
 
 def get_printable_string(s):
+    """
+    Returns a printable string which is visually similar to the given string.
+    """
     return unidecode(s)

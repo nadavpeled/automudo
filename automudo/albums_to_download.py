@@ -82,9 +82,9 @@ def find_possible_album_matches_in_discogs(search_string,
             break  # no more pages
 
 
-def get_list_of_albums_to_download(music_bookmarks):
+def find_albums_to_download(music_bookmarks):
     """
-    Returns a list of albums to download given the user's music bookmarks.
+    Returns a list of albums matching the user's music bookmarks.
     Each item in this list is in the form (artist-name, album-name).
 
     Note: interacts with the user for choosing a correct album name
@@ -100,7 +100,7 @@ def get_list_of_albums_to_download(music_bookmarks):
             config.MASTER_RELEASES_ONLY
             )
 
-        def print_album_search_result(result_number, result):
+        def print_album_description(result_number, result):
             print("[Album {}]".format(result_number))
             print("title:", cui.get_printable_string(result['title']))
             print("year:", result.get('year', "?"))
@@ -111,7 +111,7 @@ def get_list_of_albums_to_download(music_bookmarks):
             album = cui.let_user_choose_item(
                 possible_album_matches,
                 config.ITEMS_PER_PAGE,
-                print_album_search_result,
+                print_album_description,
                 "Please choose an album",
                 config.ALBUM_METADATA_AUTOSELECTION_MODE
                 )

@@ -35,7 +35,7 @@ class Rutracker(Tracker):
             if not self._is_authenticated_user_response(response):
                 raise TrackerLoginError("Could not login to rutracker.")
 
-    def get_topics_by_title(self, title):
+    def find_torrents_by_title(self, title):
         url = 'http://rutracker.org/forum/tracker.php?nm="{}"+"{}"'
         url = url.format(*title)
         response = self._http_request(url).decode('windows-1251')
@@ -44,10 +44,10 @@ class Rutracker(Tracker):
                 yield (line.split('t=')[1].split('"')[0],
                        line.split(">")[1].split("<")[0])
 
-    def get_torrent_file_contents(self, topic_id):
-        url = "http://dl.rutracker.org/forum/dl.php?t={}".format(topic_id)
+    def get_torrent_file_contents(self, torrent_id):
+        url = "http://dl.rutracker.org/forum/dl.php?t={}".format(torrent_id)
         viewtopic_url_format = "http://rutracker.org/forum/viewtopic.php?t={}"
-        referer_header = {'Referer': viewtopic_url_format.format(topic_id)}
+        referer_header = {'Referer': viewtopic_url_format.format(torrent_id)}
         return self._http_request(url,
-                                  cookies={'bb_dl': str(topic_id)},
+                                  cookies={'bb_dl': str(torrent_id)},
                                   headers=referer_header)

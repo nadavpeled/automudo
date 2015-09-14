@@ -83,14 +83,14 @@ class Tracker(object):
                 if login_attempts > self.MAX_LOGIN_ATTEMPTS:
                     raise e
 
-    def get_topics_by_title(self, title):
+    def find_torrents_by_title(self, title):
         """
-        Searches for torrents given a search string
-        and returns their identifiers.
+        Finds torrents given a title and returns
+        their identifiers in the tracker.
         """
         raise NotImplementedError()
 
-    def get_torrent_file_contents(self, topic_id):
+    def get_torrent_file_contents(self, torrent_id):
         """
         Returns the contents of the torrent file with the given identifier.
         """
