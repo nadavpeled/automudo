@@ -1,14 +1,6 @@
 import os
-import sys
 import json
 import itertools
-
-
-class FileNotFoundError(Exception):
-    """
-        File not found exception.
-    """
-    pass
 
 
 def get_user_chrome_bookmarks():
@@ -74,7 +66,7 @@ def parse_chrome_bookmarks(bookmark_node):
                          str(bookmark_node))
 
 
-def get_music_bookmarks_from_bookmarks_list(all_bookmarks):
+def extract_music_bookmarks(all_bookmarks):
     """
         Given a list of bookmarks in the format described in
         parse_chrome_bookmarks, returns a list of the bookmarks
@@ -92,7 +84,7 @@ def get_user_music_bookmarks():
     """
     chrome_bookmarks = get_user_chrome_bookmarks()
     parsed_chrome_bookmarks = parse_chrome_bookmarks(chrome_bookmarks)
-    return get_music_bookmarks_from_bookmarks_list(parsed_chrome_bookmarks)
+    return extract_music_bookmarks(parsed_chrome_bookmarks)
 
 
 def get_user_music_bookmarks_titles():

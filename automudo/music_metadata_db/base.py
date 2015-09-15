@@ -11,11 +11,11 @@ class MusicMetadataDB(object):
         An interface representing a music metadata database.
         This interface provides functions for searching music metadata.
     """
-    # Non-important keywords that can be removed from search strings.
-    _KEYWORDS_TO_REMOVE_FROM_SEARCH_STRING = [
+    # Unwanted keywords that should be removed from search strings.
+    _UNWANTED_SEARCH_KEYWORDS = [
         "youtube", "rdio", "grooveshark", "- profile -",
-        "from the album", "full album", "album", "hd",
-        "narrated", "composed", "by", "and"
+        "from the album", "full album", "debut album", "album",
+        "hd", "narrated", "composed", "by", "and", "track", "volume"
         ]
 
     # The regex pattern matches the keyword if:
@@ -23,9 +23,9 @@ class MusicMetadataDB(object):
     #    or it's in the beginning of the string
     # 2. there is a non-alphabetic character after it
     #    or it's in the end of the string
-    _REGEXES_OF_KEYWORDS_TO_REMOVE = [
+    _UNWANTED_KEYWORDS_REGEXES = [
         re.compile(r"(?:(?<=\W)|(?<=^)){}(?=\W|$)".format(k))
-        for k in _KEYWORDS_TO_REMOVE_FROM_SEARCH_STRING
+        for k in _UNWANTED_SEARCH_KEYWORDS
         ]
 
     @classmethod
@@ -49,6 +49,9 @@ class MusicMetadataDB(object):
 
     @staticmethod
     def _find_album(search_string, master_releases_only):
+        """
+            The DB-specific implementation for find_album.
+        """
         raise NotImplementedError()
 
     @classmethod
@@ -66,15 +69,19 @@ class MusicMetadataDB(object):
         """
         search_string = search_string.lower()
 
-        # Remove comments
+        # Remove comments.
         search_string = re.sub(
             r"(\([^\)]*\)|\({^\}]*\}|\[{^\]*\])", "", search_string
             )
 
-        for r in cls._REGEXES_OF_KEYWORDS_TO_REMOVE:
-            search_string = r.sub("", search_string)
+        for regex in cls._UNWANTED_KEYWORDS_REGEXES:
+            search_string = regex.sub("", search_string)
 
-        # Replace sequences of spaces and tabs with a single space
+        # Replace sequences of spaces and tabs with a single space.
         search_string = re.sub(r"\s+", " ", search_string)
 
+        try:
+            print("<<{}>>".format(search_string)) # TODO: remoe this
+        except:
+            pass
         return search_string.strip()

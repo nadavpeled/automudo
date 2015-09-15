@@ -1,7 +1,6 @@
 import os
 import re
 import csv
-import sys
 import itertools
 
 from automudo import config
@@ -83,12 +82,12 @@ def find_torrents_of_albums(albums, tracker):
 
         try:
             chosen_item = cui.let_user_choose_item(
-                                  available_torrents,
-                                  config.ITEMS_PER_PAGE,
-                                  print_torrent_description,
-                                  "Please choose a torrent",
-                                  config.TORRENT_AUTOSELECTION_MODE
-                                  )
+                available_torrents,
+                config.ITEMS_PER_PAGE,
+                print_torrent_description,
+                "Please choose a torrent",
+                config.TORRENT_AUTOSELECTION_MODE
+                )
         except cui.NoMoreItemsError:
             print("No matching torrents found.")
             print()
@@ -122,28 +121,37 @@ def download_albums_torrents(albums, tracker, torrents_dir):
                                           torrent_id)
             )
         torrent_file_path = os.path.join(torrents_dir, torrent_file_name)
-        with open(torrent_file_path, "wb") as f:
-            f.write(tracker.get_torrent_file_contents(torrent_id))
+        with open(torrent_file_path, "wb") as torrent_file:
+            torrent_file.write(tracker.get_torrent_file_contents(torrent_id))
         yield album
 
 
-def get_already_downloaded_bookmark_titles():
+def get_titles_of_downloaded_albums():
+    """
+        Returns an iterator of the bookmark titles
+        for whom torrents were already downloaded
+        in the previous runs of the program.
+    """
     try:
-        with open(DOWNLOADED_ALBUMS_LIST_FILE, "r", newline="") as f:
-            for row in csv.DictReader(f):
+        with open(DOWNLOADED_ALBUMS_LIST_FILE, "r", newline="") as input_file:
+            for row in csv.DictReader(input_file):
                 yield row['bookmark-title']
     except IOError:
         pass  # The downloads file does not exist.
 
 
-def add_albums_to_downloaded_albums_file(downloaded_albums,
-                                         titles_to_albums):
+def mark_albums_as_downloaded(downloaded_albums, titles_to_albums):
+    """
+        Writes the titles for whom torrent were downloaded
+        to the downloaded albums list file.
+    """
     should_write_header = not os.path.exists(DOWNLOADED_ALBUMS_LIST_FILE)
 
-    with open(DOWNLOADED_ALBUMS_LIST_FILE, "a+", newline="") as f:
-        writer = csv.DictWriter(f, ['bookmark-title',
-                                    'release-id',
-                                    'metadata-db-name'])
+    with open(DOWNLOADED_ALBUMS_LIST_FILE, "a+", newline="") as output_file:
+        writer = csv.DictWriter(
+            output_file,
+            ['bookmark-title', 'release-id', 'metadata-db-name']
+            )
         if should_write_header:
             writer.writeheader()
 
@@ -159,19 +167,22 @@ def add_albums_to_downloaded_albums_file(downloaded_albums,
 
 
 def main():
+    """
+        The entry point of the automudo program.
+    """
     # TODO: The discogs and rutracker references should
     #       really be in the configuration file instead.
     metadata_db = DiscogsMetadataDB
 
-    already_downloaded_titles = get_already_downloaded_bookmark_titles()
+    already_downloaded_titles = get_titles_of_downloaded_albums()
     titles_for_download = sorted(
         set(get_user_music_bookmarks_titles()) - set(already_downloaded_titles)
         )
 
     titles_to_albums = find_albums_to_download(
-                           titles_for_download,
-                           metadata_db
-                       )
+        titles_for_download,
+        metadata_db
+        )
 
     # Note: Needed because there are two independent consumers of the iterable
     titles_to_albums, titles_to_albums2 = itertools.tee(titles_to_albums)
@@ -183,9 +194,9 @@ def main():
 
     torrents_dir = os.path.expanduser(config.TORRENTS_DIR)
     os.makedirs(torrents_dir, exist_ok=True)
-    add_albums_to_downloaded_albums_file(
-         download_albums_torrents(albums_to_download, tracker, torrents_dir),
-         titles_to_albums
+    mark_albums_as_downloaded(
+        download_albums_torrents(albums_to_download, tracker, torrents_dir),
+        titles_to_albums
         )
 
 if __name__ == '__main__':

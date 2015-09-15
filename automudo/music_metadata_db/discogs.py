@@ -6,8 +6,14 @@ from automudo.music_metadata_db.base import AlbumMetadata, MusicMetadataDB
 
 
 class DiscogsMetadataDB(MusicMetadataDB):
+    """
+        A MusicMetadataDB implementation for Discogs.
+    """
     @staticmethod
     def _find_album(search_string, master_releases_only):
+        """
+            Implementation for MusicMetadataDB._find_album .
+        """
         page_number = 1
         headers = {'User-Agent': config.USER_AGENT}
         params = {
@@ -54,4 +60,4 @@ class DiscogsMetadataDB(MusicMetadataDB):
 
             page_number += 1
             if page_number > search_response['pagination']['pages']:
-                break  # no more pages
+                break  # No more pages.

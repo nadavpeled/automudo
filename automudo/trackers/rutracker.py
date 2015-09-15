@@ -19,23 +19,33 @@ class Rutracker(Tracker):
         self.__password = password
         super(Rutracker, self).__init__(user_agent)
 
-    def _is_authenticated_user_response(self, response):
+    @staticmethod
+    def _is_authenticated_user_response(response):
+        """
+            Implementation for Tracker._is_authenticated_user_response .
+        """
         return b"logout" in response
 
     def _login(self):
-            login_params = {
-                'login_username': self.__username,
-                'login_password': self.__password,
-                'login': "%C2%F5%EE%E4"  # vhod
-            }
-            url = "http://login.rutracker.org/forum/login.php"
-            response = self._http_request(url,
-                                          data=login_params,
-                                          login_if_needed=False)
-            if not self._is_authenticated_user_response(response):
-                raise TrackerLoginError("Could not login to rutracker.")
+        """
+            Implementation for Tracker._login .
+        """
+        login_params = {
+            'login_username': self.__username,
+            'login_password': self.__password,
+            'login': "%C2%F5%EE%E4"  # vhod
+        }
+        url = "http://login.rutracker.org/forum/login.php"
+        response = self._http_request(url,
+                                      data=login_params,
+                                      login_if_needed=False)
+        if not self._is_authenticated_user_response(response):
+            raise TrackerLoginError("Could not login to rutracker.")
 
     def find_torrents_by_keywords(self, keywords):
+        """
+            Implementation for Tracker.find_torrents_by_keywords .
+        """
         url = 'http://rutracker.org/forum/tracker.php?nm={}'
         url = url.format("+".join(map('"{}"'.format, keywords)))
         response = self._http_request(url).decode('windows-1251')
@@ -45,6 +55,9 @@ class Rutracker(Tracker):
                        line.split(">")[1].split("<")[0])
 
     def get_torrent_file_contents(self, torrent_id):
+        """
+            Implementation for Tracker.get_torrent_file_contents .
+        """
         url = "http://dl.rutracker.org/forum/dl.php?t={}".format(torrent_id)
         viewtopic_url_format = "http://rutracker.org/forum/viewtopic.php?t={}"
         referer_header = {'Referer': viewtopic_url_format.format(torrent_id)}
