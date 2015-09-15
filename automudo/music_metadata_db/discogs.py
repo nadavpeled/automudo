@@ -19,7 +19,6 @@ class DiscogsMetadataDB(MusicMetadataDB):
         params = {
             'token': config.DISCOGS_API_KEY,
             'type': "master" if master_releases_only else "release",
-            'format': "album",
             'q': search_string,
             'per_page': config.ITEMS_PER_PAGE,
             'page': 1
@@ -53,8 +52,9 @@ class DiscogsMetadataDB(MusicMetadataDB):
                 title = re.sub(r"\([^\)]*\)", "", title)
 
                 yield AlbumMetadata(artist=artist, title=title,
-                                    genres=result.get('style', []),
+                                    genres=result.get('style', None),
                                     date=result.get('year', None),
+                                    formats=result.get('format', None),
                                     release_id=result['id'],
                                     metadata_db_name="discogs")
 

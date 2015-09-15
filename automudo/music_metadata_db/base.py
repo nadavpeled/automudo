@@ -3,7 +3,8 @@ from collections import namedtuple
 
 AlbumMetadata = namedtuple('AlbumMetadata',
                            ['artist', 'title', 'genres',
-                            'date', 'release_id', 'metadata_db_name'])
+                            'date', 'formats',
+                            'release_id', 'metadata_db_name'])
 
 
 class MusicMetadataDB(object):
@@ -80,8 +81,4 @@ class MusicMetadataDB(object):
         # Replace sequences of spaces and tabs with a single space.
         search_string = re.sub(r"\s+", " ", search_string)
 
-        try:
-            print("<<{}>>".format(search_string)) # TODO: remoe this
-        except:
-            pass
         return search_string.strip()

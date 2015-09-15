@@ -25,7 +25,7 @@ def find_albums_to_download(albums_search_strings, metadata_db):
     """
     for search_string in albums_search_strings:
         print("------------------------------------------")
-        print("Looking for albums matching '{}'..".format(
+        print("Looking for music releases matching '{}'..".format(
             cui.get_printable_string(search_string)
             ))
         possible_album_matches = metadata_db.find_album(
@@ -34,11 +34,16 @@ def find_albums_to_download(albums_search_strings, metadata_db):
             )
 
         def print_album_details(result_number, album):
-            print("[Album {}]".format(result_number))
+            print("[Release {}]".format(result_number))
             print("artist:", cui.get_printable_string(album.artist))
             print("title:", cui.get_printable_string(album.title))
             print("date:", album.date if album.date else "?")
-            print("genres:", ",".join(album.genres) if album.genres else "?")
+            print("genres:", cui.get_printable_string(",".join(album.genres)
+                                                      if album.genres
+                                                      else "?"))
+            print("format:", cui.get_printable_string(",".join(album.formats)
+                                                      if album.formats
+                                                      else "?"))
             print()
 
         try:
@@ -46,7 +51,7 @@ def find_albums_to_download(albums_search_strings, metadata_db):
                 possible_album_matches,
                 config.ITEMS_PER_PAGE,
                 print_album_details,
-                "Please choose an album",
+                "Please choose a release",
                 config.ALBUM_METADATA_AUTOSELECTION_MODE
                 )
         except cui.NoMoreItemsError:

@@ -46,9 +46,10 @@ class Rutracker(Tracker):
         """
             Implementation for Tracker.find_torrents_by_keywords .
         """
-        url = 'http://rutracker.org/forum/tracker.php?nm={}'
-        url = url.format("+".join(map('"{}"'.format, keywords)))
-        response = self._http_request(url).decode('windows-1251')
+        url = 'http://rutracker.org/forum/tracker.php'
+        params = {'nm': " ".join(map('"{}"'.format, keywords))}
+        response = self._http_request(url, 'GET', params=params)
+        response = response.decode('windows-1251')
         for line in response.splitlines():
             if ('tLink' in line) and ('viewtopic.php' in line):
                 yield (line.split('t=')[1].split('"')[0],
@@ -58,9 +59,10 @@ class Rutracker(Tracker):
         """
             Implementation for Tracker.get_torrent_file_contents .
         """
-        url = "http://dl.rutracker.org/forum/dl.php?t={}".format(torrent_id)
         viewtopic_url_format = "http://rutracker.org/forum/viewtopic.php?t={}"
         referer_header = {'Referer': viewtopic_url_format.format(torrent_id)}
-        return self._http_request(url,
+        return self._http_request("http://dl.rutracker.org/forum/dl.php",
+                                  'GET',
+                                  params={'t': torrent_id},
                                   cookies={'bb_dl': str(torrent_id)},
                                   headers=referer_header)
