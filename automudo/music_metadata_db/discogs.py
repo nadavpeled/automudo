@@ -1,3 +1,4 @@
+import re
 import requests
 
 from automudo import config
@@ -25,13 +26,26 @@ class DiscogsMetadataDB(MusicMetadataDB):
 
             search_results = search_response['results']
             for result in search_results:
-                # remove ", the" from the artist name
-                i = result['title'].lower().find(', the')
-                if i > 0:
-                    j = result['title'].find(' - ', i)
-                    result['title'] = result['title'][:i] + result['title'][j:]
+                artist, title = result['title'].split(' - ', 1)
 
-                artist, _, title = result['title'].partition(' - ')
+                # Remove the string ", the" from the artist name.
+                i = artist.lower().find(', the')
+                if i > 0:
+                    artist = artist[:i]
+
+                # Discogs distinguishes between multiple artists
+                # with the same name by writing a numeric identifer
+                # in parenthesis after the artist name.
+                # We don't need this, so we omit it.
+                artist = re.sub(r"\s*\([0-9]+\)$", "", artist)
+
+                # When albums with parenthesis in their names are
+                # referenced online, the parenthesis part is usually omitted.
+                # Therefore, if we don't omit the parenthesis part,
+                # searches for albums by the metadata we provide
+                # might not be as successful.
+                title = re.sub(r"\([^\)]*\)", "", title)
+
                 yield AlbumMetadata(artist=artist, title=title,
                                     genres=result.get('style', []),
                                     date=result.get('year', None),
