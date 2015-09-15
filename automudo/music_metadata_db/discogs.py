@@ -34,7 +34,9 @@ class DiscogsMetadataDB(MusicMetadataDB):
                 artist, _, title = result['title'].partition(' - ')
                 yield AlbumMetadata(artist=artist, title=title,
                                     genres=result.get('style', []),
-                                    date=result.get('year', None))
+                                    date=result.get('year', None),
+                                    release_id=result['id'],
+                                    metadata_db_name="discogs")
 
             page_number += 1
             if page_number > search_response['pagination']['pages']:

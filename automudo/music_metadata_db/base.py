@@ -2,7 +2,8 @@ import re
 from collections import namedtuple
 
 AlbumMetadata = namedtuple('AlbumMetadata',
-                           ['artist', 'title', 'genres', 'date'])
+                           ['artist', 'title', 'genres',
+                            'date', 'release_id', 'metadata_db_name'])
 
 
 class MusicMetadataDB(object):
