@@ -21,3 +21,5 @@ class UserSelectionType(object):
     SKIPPED_SELECTION = 1
     # No items to select from
     NO_ITEMS_TO_SELECT_FROM = 2
+    # The user has requested permanent skip
+    PERMANENT_SKIP_REQUESTED = 3

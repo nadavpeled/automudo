@@ -1,4 +1,5 @@
 import re
+import difflib
 from collections import namedtuple
 
 AlbumMetadata = namedtuple('AlbumMetadata',
@@ -16,7 +17,8 @@ class MusicMetadataDB(object):
     _UNWANTED_SEARCH_KEYWORDS = [
         "youtube", "rdio", "grooveshark", "- profile -",
         "from the album", "full album", "debut album", "album",
-        "hd", "narrated", "composed", "by", "and", "track", "volume"
+        "hd", "narrated", "composed", "by", "and", "track", "volume",
+        "disc", "cd", "vinyl", "lp", "ep"
         ]
 
     # The regex pattern matches the keyword if:
@@ -30,26 +32,31 @@ class MusicMetadataDB(object):
         ]
 
     @classmethod
-    def find_album(cls, search_string, master_releases_only=True):
+    def find_album(cls, search_string):
         """
-            Finds albums in the DB whose title is similar
-            to the search string in discogs.
+            Finds an album in the metadata database matching the search string.
 
             Parameters:
                 search_string - the search string
-                master_releases_only - should look for releases other than
-                                       the very first release of each album
 
             Returns:
-                An iterator of the search results (as AlbumMetadata-s).
+                (album, probability) tuple.
         """
-        yield from cls._find_album(
-            cls._normalize_album_search_string(search_string),
-            master_releases_only
+        normalized_search_string = cls._normalize_album_search_string(
+            search_string
             )
+        album = cls._find_album(normalized_search_string)
+        if album:
+            probability = difflib.SequenceMatcher(
+                a=normalized_search_string.lower(),
+                b=" ".join([album.artist.lower(), album.title.lower()])
+                ).ratio()
+        else:
+            probability = 0
+        return album, probability
 
     @staticmethod
-    def _find_album(search_string, master_releases_only):
+    def _find_album(search_string):
         """
             The DB-specific implementation for find_album.
         """

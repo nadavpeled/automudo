@@ -11,54 +11,59 @@ class DiscogsMetadataDB(MusicMetadataDB):
         A MusicMetadataDB implementation for Discogs.
     """
     @staticmethod
-    def _find_album(search_string, master_releases_only):
+    def _find_album(search_string):
         """
             Implementation for MusicMetadataDB._find_album .
         """
-        page_number = 1
         headers = {'User-Agent': config.USER_AGENT}
-        while True:
-            params = {
-                'token': config.DISCOGS_API_KEY,
-                'type': "master" if master_releases_only else "release",
-                'q': search_string,
-                'per_page': config.ITEMS_PER_PAGE,
-                'page': page_number
-                }
+        params = {
+            'token': config.DISCOGS_API_KEY,
+            'type': "master",
+            'q': search_string,
+            'per_page': 1,
+            'page': 1
+            }
+
+        # The release formats are specified in the order of preference.
+        # "" means any format.
+        for release_format in ["album", "vinyl", "cd", "lp", ""]:
+            params['format'] = release_format
             search_response = requests.get(
                 "https://api.discogs.com/database/search",
                 params=params, headers=headers
                 ).json()
 
             search_results = search_response['results']
-            for result in search_results:
-                artist, title = result['title'].split(' - ', 1)
+            if search_results:
+                break
 
-                # Remove the string ", the" from the artist name.
-                i = artist.lower().find(', the')
-                if i > 0:
-                    artist = artist[:i]
+        if not search_results:
+            return None
 
-                # Discogs distinguishes between multiple artists
-                # with the same name by writing a numeric identifer
-                # in parenthesis after the artist name.
-                # We don't need this, so we omit it.
-                artist = re.sub(r"\s*\([0-9]+\)$", "", artist)
+        result = search_results[0]
+        artist, title = result['title'].split(' - ', 1)
 
-                # When albums with parenthesis in their names are
-                # referenced online, the parenthesis part is usually omitted.
-                # Therefore, if we don't omit the parenthesis part,
-                # searches for albums by the metadata we provide
-                # might not be as successful.
-                title = re.sub(r"\([^\)]*\)", "", title)
+        # Remove the string ", the" from the artist name.
+        i = artist.lower().find(', the')
+        if i > 0:
+            artist = artist[:i]
 
-                yield AlbumMetadata(artist=artist, title=title,
-                                    genres=result.get('style', None),
-                                    date=result.get('year', None),
-                                    formats=result.get('format', None),
-                                    release_id=result['id'],
-                                    metadata_db_name="discogs")
+        # Discogs distinguishes between multiple artists
+        # with the same name by writing a numeric identifer
+        # in parenthesis after the artist name.
+        # We don't need this, so we omit it.
+        artist = re.sub(r"\s*\([0-9]+\)$", "", artist)
 
-            page_number += 1
-            if page_number > search_response['pagination']['pages']:
-                break  # No more pages.
+        # When albums with parenthesis in their names are
+        # referenced online, the parenthesis part is usually omitted.
+        # Therefore, if we don't omit the parenthesis part,
+        # searches for albums by the metadata we provide
+        # might not be as successful.
+        title = re.sub(r"\([^\)]*\)", "", title)
+
+        return AlbumMetadata(artist=artist, title=title,
+                             genres=result.get('style', None),
+                             date=result.get('year', None),
+                             formats=result.get('format', None),
+                             release_id=result['id'],
+                             metadata_db_name="discogs")

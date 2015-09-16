@@ -2,65 +2,19 @@
 import os
 import re
 import csv
-import itertools
 
 from automudo import config
 from automudo.ui import cui
 from automudo.ui.user_selection import UserSelectionType
 from automudo.browsers.chrome import ChromeBrowser
 from automudo.trackers.rutracker import Rutracker
+from automudo.music_metadata_db.base import AlbumMetadata
 from automudo.music_metadata_db.discogs import DiscogsMetadataDB
 
 
 # TODO: Move this file to the user's appdata (or something else in Unix)
 TITLES_TO_SKIP_FILE = os.path.join(config.TORRENTS_DIR,
                                    ".automudo_permanent_skips.csv")
-
-
-def choose_matching_album(search_string, metadata_db):
-    """
-    Lets the user choose an album matching the given search string
-    in the given metadata database.
-    Returns a tuple: (user-selection-type, album-metadata).
-
-    Note: might interact with the user for selecting a matching album,
-          dependening on the user's chosen autoselection mode.
-    """
-    print("------------------------------------------")
-    print("Looking for music releases matching '{}'..".format(
-        cui.get_printable_string(search_string)
-        ))
-    possible_album_matches = metadata_db.find_album(
-        search_string,
-        config.MASTER_RELEASES_ONLY
-        )
-
-    def print_album_details(result_number, album):
-        print("[Release {}]".format(result_number))
-        print("artist:", cui.get_printable_string(album.artist))
-        print("title:", cui.get_printable_string(album.title))
-        print("date:", album.date if album.date else "?")
-        print("genres:", cui.get_printable_string(",".join(album.genres)
-                                                  if album.genres
-                                                  else "?"))
-        print("format:", cui.get_printable_string(",".join(album.formats)
-                                                  if album.formats
-                                                  else "?"))
-        print()
-
-    user_selection_type, album = cui.let_user_choose_item(
-        possible_album_matches,
-        config.ITEMS_PER_PAGE,
-        print_album_details,
-        "Please choose a release",
-        config.ALBUM_METADATA_AUTOSELECTION_MODE
-        )
-
-    if user_selection_type == UserSelectionType.NO_ITEMS_TO_SELECT_FROM:
-        print("No matching albums found.")
-        print()
-
-    return (user_selection_type, album)
 
 
 def choose_torrent_for_album(album, tracker):
@@ -71,7 +25,7 @@ def choose_torrent_for_album(album, tracker):
     Note: might interact with the user for selecting a matching torrent,
           dependening on the user's chosen autoselection mode.
     """
-    print("Looking for torrents matching '{}'..".format(
+    print("Looking for torrents matching:  {}".format(
         cui.get_printable_string(" - ".join([album.artist, album.title]))
         ))
     available_torrents = tracker.find_torrents_by_keywords(
@@ -120,7 +74,7 @@ def download_album_torrent(album, tracker, torrents_dir):
     """
     user_selection_type, torrent_id = choose_torrent_for_album(album, tracker)
 
-    if album:
+    if user_selection_type == UserSelectionType.ITEM_SELECTED:
         torrent_file_name = re.sub(
             r'[\/:*?"<>|]', '_',
             "{} - {} [{}].torrent".format(album.artist, album.title,
@@ -147,6 +101,51 @@ def get_titles_of_downloaded_albums():
         pass  # The downloads file does not exist.
 
 
+def find_album_or_ask_user(title, metadata_db):
+    """
+        Looks for an album by title in the given metadata database.
+        If no matching albums were found, asks the user for help.
+
+        Returns:
+            (user-selection-type, album-metadata).
+    """
+    print("Looking for an album matching:  {}".format(
+        cui.get_printable_string(title)
+        ))
+
+    album, probability = metadata_db.find_album(title)
+
+    # If the search string is a track name,
+    # the matching probability will be lower than expected.
+    if ("album" not in title.lower()) and (0.5 < probability < 0.6):
+        probability = 0.6
+
+    if (not album) or probability < 0.6:
+        print("Couldn't autonomously find a match.")
+        artist_name = input(
+            "Who is the artist? (Enter - skip, . - permanent skip): "
+            )
+        if artist_name.strip() == ".":
+            return (UserSelectionType.PERMANENT_SKIP_REQUESTED, None)
+        elif not artist_name.strip():
+            return (UserSelectionType.SKIPPED_SELECTION, None)
+        album_title = input("What is the album title? ")
+        print()
+
+        album = AlbumMetadata(artist=artist_name, title=album_title,
+                              genres=[], date=None, formats=None,
+                              release_id="", metadata_db_name="manual")
+    else:
+        print(cui.get_printable_string(
+            'Match [{:.2%}]:  {} - {}'.format(
+                probability, album.artist, album.title
+                )
+               ))
+
+    print()
+    return (UserSelectionType.ITEM_SELECTED, album)
+
+
 def download_albums_by_titles(titles_to_download,
                               metadata_db, metadata_db_name,
                               tracker, torrents_dir):
@@ -171,35 +170,40 @@ def download_albums_by_titles(titles_to_download,
             skipped_titles_file_writer.writeheader()
 
         for title in titles_to_download:
-            user_selection_type, album = choose_matching_album(
+            user_selection_type, album = find_album_or_ask_user(
                 title, metadata_db
                 )
-            if user_selection_type == UserSelectionType.NO_ITEMS_TO_SELECT_FROM:
+            if user_selection_type == UserSelectionType.PERMANENT_SKIP_REQUESTED:
                 skipped_titles_file_writer.writerow({
                     'bookmark-title': title,
                     'release-id': "",
                     'metadata-db-name': "",
-                    'reason': "no matching albums"
+                    'reason': "permanent skip requested"
+                    })
+                continue
+            elif user_selection_type == UserSelectionType.SKIPPED_SELECTION:
+                continue  # Skip the torrent downloading as well.
+
+            assert user_selection_type == UserSelectionType.ITEM_SELECTED
+
+            user_selection_type = download_album_torrent(
+                album, tracker, torrents_dir
+                )
+            if user_selection_type == UserSelectionType.NO_ITEMS_TO_SELECT_FROM:
+                skipped_titles_file_writer.writerow({
+                    'bookmark-title': title,
+                    'release-id': album.release_id,
+                    'metadata-db-name': metadata_db_name,
+                    'reason': "no matching torrents"
                     })
             elif user_selection_type == UserSelectionType.ITEM_SELECTED:
-                user_selection_type = download_album_torrent(
-                    album, tracker, torrents_dir
-                    )
-                if user_selection_type == UserSelectionType.NO_ITEMS_TO_SELECT_FROM:
-                    skipped_titles_file_writer.writerow({
-                        'bookmark-title': title,
-                        'release-id': album.release_id,
-                        'metadata-db-name': metadata_db_name,
-                        'reason': "no matching torrents"
-                        })
-                elif user_selection_type == UserSelectionType.ITEM_SELECTED:
-                    # A torrent was chosen.
-                    skipped_titles_file_writer.writerow({
-                        'bookmark-title': title,
-                        'release-id': album.release_id,
-                        'metadata-db-name': metadata_db_name,
-                        'reason': "torrent downloaded"
-                        })
+                # A torrent was chosen.
+                skipped_titles_file_writer.writerow({
+                    'bookmark-title': title,
+                    'release-id': album.release_id,
+                    'metadata-db-name': metadata_db_name,
+                    'reason': "torrent downloaded"
+                    })
 
 
 def main():

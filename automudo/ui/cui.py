@@ -69,7 +69,7 @@ def let_user_choose_action(prompt, actions_descriptions,
         action_chars_prompt += " / "
 
     # Replace the last " / " with ") ".
-    action_chars_prompt = action_chars_prompt[:-3] + ") "
+    action_chars_prompt = action_chars_prompt[:-3] + "): "
 
     full_prompt = prompt + action_chars_prompt
     while True:

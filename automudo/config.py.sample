@@ -15,12 +15,6 @@ ITEMS_PER_PAGE = 3
 # 3. Create a server key and put it here
 DISCOGS_API_KEY = '<ENTER-YOUR-DISCOGS-API-KEY-HERE>'
 
-# Returns less search results for album metadata, but more accurate ones.
-MASTER_RELEASES_ONLY = True
-
-# Most of the time, autoselecting an album if it is the only match works well.
-ALBUM_METADATA_AUTOSELECTION_MODE = AutoselectModes.AUTOSELECT_IF_ONLY
-
 
 # TRACKER SETTINGS
 
