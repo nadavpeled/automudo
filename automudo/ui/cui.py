@@ -2,15 +2,16 @@ import os
 import sys
 import string
 import itertools
+from collections import OrderedDict
 
 from unidecode import unidecode
 
 from .autoselect_modes import AutoselectModes
 
 
-class NoMoreItemsError(IndexError):
+class NoItemsError(IndexError):
     """
-        There are no more items to select from.
+        There are no items to select from.
     """
     pass
 
@@ -21,9 +22,12 @@ def get_char_from_terminal():
     """
     if os.name.startswith("nt"):  # Windows
         import msvcrt
-        return msvcrt.getche().decode('utf-8')
+        c = msvcrt.getwch()
+        print(c)
+        if c == '\x03':  # Ctrl+C
+            raise KeyboardInterrupt()
+        return c
     else:
-        import sys
         import tty
         import termios
         fd = sys.stdin.fileno()
@@ -34,6 +38,58 @@ def get_char_from_terminal():
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
+
+
+def let_user_choose_action(prompt, actions_descriptions,
+                           allowed_digits=None):
+    """
+        Lets the user choose an action from a given set of actions.
+        For example, "Would you like to ...? (Y/n)" interactions
+        can be implemented as:
+            let_user_choose_action("Would you like to ...?",
+                                   OrderedDict([('Y', ""),
+                                                ('n', "")]))
+        You can, of course, put a real description instead of "",
+        and then it will be shown to the user in the prompt.
+
+        For numeric selection, you can set allowed_digits
+        to be the digits to choose from.
+    """
+    default_action_char = None
+    action_chars_prompt = " ("
+
+    if allowed_digits:
+        allowed_digits_as_chars = [str(d) for d in allowed_digits]
+        default_action_char = allowed_digits_as_chars[0]
+        action_chars_prompt += "Enter - {} / ".format(allowed_digits[0])
+
+    for action_char, description in actions_descriptions.items():
+        if action_char.isupper():
+            # Make sure that the caller did not define
+            # two different action chars.
+            assert default_action_char is None
+            default_action_char = action_char
+
+        action_chars_prompt += action_char
+        if description:
+            action_chars_prompt += " - {}".format(description)
+        action_chars_prompt += " / "
+
+    # Replace the last " / " with ") ".
+    action_chars_prompt = action_chars_prompt[:-3] + ") "
+
+    full_prompt = prompt + action_chars_prompt
+    while True:
+        print(full_prompt, end="", flush=True)
+        action_char = get_char_from_terminal().lower()
+        print()
+
+        if action_char in ['\r', '\n']:
+            action_char = default_action_char
+
+        if ((action_char in actions_descriptions) or
+                (allowed_digits and action_char in allowed_digits_as_chars)):
+            return action_char
 
 
 def let_user_choose_item(items_iterator, items_per_page,
@@ -55,25 +111,30 @@ def let_user_choose_item(items_iterator, items_per_page,
             returns None.
 
         Raises:
-            NoMoreItemsError - there are no more items that
-                               the user can choose from.
+            NoItemsError - there are no items that
+                           the user can choose from at all.
     """
-    # Note: this program is for the lazy, hench the getch solution
-    #       and this assertion, which is needed because of it.
-    assert items_per_page < 10
+    items_iterator, items_iterator_backup = itertools.tee(items_iterator)
 
-    if not items_iterator:
-        raise NoMoreItemsError(
-            "let_user_choose_item: there are no items at all"
-            )
+    were_items_read = False
 
     page_number = 1
     while True:
         current_items = list(itertools.islice(items_iterator, items_per_page))
-        if not current_items:
-            raise NoMoreItemsError(
-                "let_user_choose_item: there are no more items"
-                )
+        if current_items:
+            were_items_read = True
+        elif were_items_read:
+            action_char = let_user_choose_action("No more options. Repeat?",
+                                                 OrderedDict([('y', ""),
+                                                              ('N', "")]))
+            if action_char == 'y':
+                new_iterators = itertools.tee(items_iterator_backup)
+                items_iterator, items_iterator_backup = new_iterators
+                continue
+            else:
+                return None
+        else:
+            raise NoItemsError()
 
         for item in enumerate(current_items, 1):
             item_printer(*item)
@@ -86,27 +147,17 @@ def let_user_choose_item(items_iterator, items_per_page,
             return current_items[0]
 
         while True:
-            print(prompt,
-                  "(Enter - 1, n - next, s - skip, q - quit): ",
-                  end=" ", flush=True)
-            c = get_char_from_terminal().lower()
-            print()
-
+            c = let_user_choose_action(
+                    prompt,
+                    OrderedDict([('n', "next"),
+                                 ('s', "skip")]),
+                    allowed_digits=range(1, items_per_page + 1))
             if c == 'n':
                 break
             elif c == 's':
                 return None
-            elif c == 'q':
-                sys.exit(0)
-            elif c in ['\r', '\n']:
-                c = "1"
-
-            if c.isdigit():
-                n = int(c)
-                if (1 <= n <= len(current_items)):
-                    return current_items[n - 1]
-                else:
-                    print("Out of range..")
+            elif c.isdigit():
+                return current_items[int(c) - 1]
         page_number += 1
 
 

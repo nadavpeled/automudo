@@ -55,7 +55,7 @@ def find_albums_to_download(albums_search_strings, metadata_db):
                 "Please choose a release",
                 config.ALBUM_METADATA_AUTOSELECTION_MODE
                 )
-        except cui.NoMoreItemsError:
+        except cui.NoItemsError:
             print("No matching albums found.")
             print()
             continue
@@ -94,7 +94,7 @@ def find_torrents_of_albums(albums, tracker):
                 "Please choose a torrent",
                 config.TORRENT_AUTOSELECTION_MODE
                 )
-        except cui.NoMoreItemsError:
+        except cui.NoItemsError:
             print("No matching torrents found.")
             print()
             continue
