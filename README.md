@@ -3,7 +3,7 @@ Autonomous Music Downloader
 
 ## What does it do?
 automudo downloads the music that you have in your bookmarks for you.  
-It aims to require as minimum user interaction as possible
+It aims to require as minimum user interaction as possible  
 and do anything as autonomously as possible.
 
 ## How does it work?
