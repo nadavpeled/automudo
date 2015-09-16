@@ -5,7 +5,7 @@ import itertools
 
 from unidecode import unidecode
 
-from automudo.ui.autoselect_modes import AutoselectModes
+from .autoselect_modes import AutoselectModes
 
 
 class NoMoreItemsError(IndexError):

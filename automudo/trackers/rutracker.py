@@ -1,4 +1,4 @@
-from automudo.trackers.base import Tracker, TrackerLoginError
+from .base import Tracker, TrackerLoginError
 
 
 class Rutracker(Tracker):

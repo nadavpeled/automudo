@@ -1,8 +1,9 @@
 import re
+
 import requests
 
 from automudo import config
-from automudo.music_metadata_db.base import AlbumMetadata, MusicMetadataDB
+from .base import AlbumMetadata, MusicMetadataDB
 
 
 class DiscogsMetadataDB(MusicMetadataDB):
