@@ -6,7 +6,7 @@ import itertools
 
 from automudo import config
 from automudo.ui import cui
-from automudo.music_bookmarks import get_user_music_bookmarks_titles
+from automudo.browsers.chrome import ChromeBrowser
 from automudo.trackers.rutracker import Rutracker
 from automudo.music_metadata_db.discogs import DiscogsMetadataDB
 
@@ -176,13 +176,15 @@ def main():
     """
         The entry point of the automudo program.
     """
-    # TODO: The discogs and rutracker references should
-    #       really be in the configuration file instead.
+    # TODO: The discogs, rutracker and Chrome references
+    #       should really be in the configuration file instead.
     metadata_db = DiscogsMetadataDB
+    browser = ChromeBrowser
 
     already_downloaded_titles = get_titles_of_downloaded_albums()
+    user_music_bookmarks_titles = browser.get_music_bookmarks_titles()
     titles_for_download = sorted(
-        set(get_user_music_bookmarks_titles()) - set(already_downloaded_titles)
+        set(user_music_bookmarks_titles) - set(already_downloaded_titles)
         )
 
     titles_to_albums = find_albums_to_download(
