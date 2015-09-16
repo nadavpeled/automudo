@@ -6,8 +6,9 @@
 - [x] setup.py
 - [x] Skip albums which we have already downloaded torrents for
 - [x] If a bookmark has no matches in the metadata db, skip it in the next run
-- [ ] Look for discography when there are no matches in the tracker
+- [ ] Make automudo more autonomous
 - [ ] Remove bookmarks of already downloaded albums
+- [ ] Look for discography when there are no matches in the tracker
 - [ ] Let the user manually enter album details instead of using a metadata db
 - [ ] Change the configuration file format
 - [x] Unix support

@@ -3,8 +3,7 @@ Autonomous Music Downloader
 
 ## What does it do?
 automudo downloads the music that you have in your bookmarks for you.  
-It aims to require as minimum user interaction as possible  
-and do anything as autonomously as possible.
+It aims to be as autonomous as possible and minimize your downloading efforts.
 
 ## How does it work?
 - it looks for a folder named "music" in your browser's bookmarks
@@ -14,6 +13,6 @@ and do anything as autonomously as possible.
 ## Running automudo
 - Download and install Python 3 (automudo does not support Python 2)
 - Download automudo
-- Copy config.py.sample to config.py and edit it (REQUIRED, don't skip this)
+- Copy config.py.sample to config.py and edit it
 - Run automudo using `python3 -m scripts.automudo`
 - If you wish, you can install automudo using the provided setup.py
