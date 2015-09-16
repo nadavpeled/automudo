@@ -6,14 +6,7 @@ from collections import OrderedDict
 
 from unidecode import unidecode
 
-from .autoselect_modes import AutoselectModes
-
-
-class NoItemsError(IndexError):
-    """
-        There are no items to select from.
-    """
-    pass
+from .user_selection import AutoselectModes, UserSelectionType
 
 
 def get_char_from_terminal():
@@ -95,8 +88,7 @@ def let_user_choose_action(prompt, actions_descriptions,
 def let_user_choose_item(items_iterator, items_per_page,
                          item_printer, prompt, autoselect_mode):
     """
-        Lets the user choose an item from a given iterator
-        and returns the chosen item.
+        Lets the user choose an item from a given iterator.
 
         Parameters:
             items_iterator - iterator of the items shown to the user
@@ -106,9 +98,7 @@ def let_user_choose_item(items_iterator, items_per_page,
             autoselect_mode - items autoselection mode
 
         Returns:
-            The chosen item.
-            If the user has chosen to skip (avoid) choosing an item,
-            returns None.
+            A tuple: (user-selection-mode, chosen-item).
 
         Raises:
             NoItemsError - there are no items that
@@ -132,9 +122,9 @@ def let_user_choose_item(items_iterator, items_per_page,
                 items_iterator, items_iterator_backup = new_iterators
                 continue
             else:
-                return None
+                return (UserSelectionType.SKIPPED_SELECTION, None)
         else:
-            raise NoItemsError()
+            return (UserSelectionType.NO_ITEMS_TO_SELECT_FROM, None)
 
         for item in enumerate(current_items, 1):
             item_printer(*item)
@@ -144,7 +134,7 @@ def let_user_choose_item(items_iterator, items_per_page,
                 (autoselect_mode == AutoselectModes.ALWAYS_AUTOSELECT)):
             print("Automatically selected (1).")
             print()
-            return current_items[0]
+            return (UserSelectionType.ITEM_SELECTED, current_items[0])
 
         while True:
             c = let_user_choose_action(
@@ -155,9 +145,10 @@ def let_user_choose_item(items_iterator, items_per_page,
             if c == 'n':
                 break
             elif c == 's':
-                return None
+                return (UserSelectionType.SKIPPED_SELECTION, None)
             elif c.isdigit():
-                return current_items[int(c) - 1]
+                return (UserSelectionType.ITEM_SELECTED,
+                        current_items[int(c) - 1])
         page_number += 1
 
 

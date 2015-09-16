@@ -1,4 +1,4 @@
-from automudo.ui.autoselect_modes import AutoselectModes
+from automudo.ui.user_selection import AutoselectModes
 
 
 # UI SETTINGS
