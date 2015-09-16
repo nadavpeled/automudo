@@ -136,20 +136,19 @@ def let_user_choose_item(items_iterator, items_per_page,
             print()
             return (UserSelectionType.ITEM_SELECTED, current_items[0])
 
-        while True:
-            c = let_user_choose_action(
-                    prompt,
-                    OrderedDict([('n', "next"),
-                                 ('s', "skip")]),
-                    allowed_digits=range(1, items_per_page + 1))
-            if c == 'n':
-                break
-            elif c == 's':
-                return (UserSelectionType.SKIPPED_SELECTION, None)
-            elif c.isdigit():
-                return (UserSelectionType.ITEM_SELECTED,
-                        current_items[int(c) - 1])
-        page_number += 1
+        c = let_user_choose_action(
+                prompt,
+                OrderedDict([('n', "next"),
+                             ('s', "skip")]),
+                allowed_digits=range(1, items_per_page + 1))
+        if c == 's':
+            return (UserSelectionType.SKIPPED_SELECTION, None)
+        elif c.isdigit():
+            return (UserSelectionType.ITEM_SELECTED,
+                    current_items[int(c) - 1])
+        else:
+            assert c == 'n'
+            page_number += 1
 
 
 def get_printable_string(s):

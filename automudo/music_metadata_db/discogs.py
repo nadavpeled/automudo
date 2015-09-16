@@ -17,14 +17,14 @@ class DiscogsMetadataDB(MusicMetadataDB):
         """
         page_number = 1
         headers = {'User-Agent': config.USER_AGENT}
-        params = {
-            'token': config.DISCOGS_API_KEY,
-            'type': "master" if master_releases_only else "release",
-            'q': search_string,
-            'per_page': config.ITEMS_PER_PAGE,
-            'page': 1
-            }
         while True:
+            params = {
+                'token': config.DISCOGS_API_KEY,
+                'type': "master" if master_releases_only else "release",
+                'q': search_string,
+                'per_page': config.ITEMS_PER_PAGE,
+                'page': page_number
+                }
             search_response = requests.get(
                 "https://api.discogs.com/database/search",
                 params=params, headers=headers
