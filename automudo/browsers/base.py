@@ -3,26 +3,27 @@ class Browser(object):
         An interface representing a browser.
         Provides functions for getting bookmarks from it.
     """
-    @classmethod
-    def get_all_bookmarks(cls):
+
+    # When inheriting this class, you should define a module-level
+    # constant named "name", containing the browser's name
+
+    def get_all_bookmarks(self):
         """
             Returns all of the user's bookmarks in the browser.
         """
         raise NotImplementedError()
 
-    @classmethod
-    def get_music_bookmarks(cls):
+    def get_music_bookmarks(self):
         """
             Returns the user's music bookmarks.
         """
-        all_bookmarks = cls.get_all_bookmarks()
+        all_bookmarks = self.get_all_bookmarks()
         return [b for b in all_bookmarks if 'music' in map(str.lower, b[0])]
 
-    @classmethod
-    def get_music_bookmarks_titles(cls):
+    def get_music_bookmarks_titles(self):
         """
             Returns the titles that were given to the user's music bookmarks.
         """
         return [bookmark_path[-1]
                 for (bookmark_path, bookmark_url)
-                in cls.get_music_bookmarks()]
+                in self.get_music_bookmarks()]

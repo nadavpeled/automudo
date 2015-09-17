@@ -1,0 +1,31 @@
+# For basic usage, look for CAPITALIZED-WORDS and replace them with real values.
+ui:
+  # Items shown in each page of search results.
+  items_per_page: 3
+  # Torrents autoselection mode (always / only-if-single / never).
+  torrents_autoselection_mode: never
+browser:
+  use: chrome
+  browsers:
+    chrome:
+      # No settings needed.
+music_metadata_database:
+  use: discogs
+  databases:
+    discogs:
+      # 1. register in https://www.discogs.com/developers/
+      # 2. create a server key
+      # 3. put it here
+      api_key: API-KEY
+tracker:
+  use: rutracker
+  output_directory: TORRENTS-DIRECTORY
+  trackers:
+    rutracker:
+      # 1. register in: http://rutracker.org/forum/profile.php?mode=register
+      # 2. put your login details here
+      username: USERNAME
+      password: PASSWORD
+advanced:
+  # For http requests.
+  user_agent: automudo/1.0

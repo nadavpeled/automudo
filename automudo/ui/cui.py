@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 from unidecode import unidecode
 
-from .user_selection import AutoselectModes, UserSelectionType
+from . import user_selection_types, autoselection_modes
 
 
 def get_char_from_terminal():
@@ -122,19 +122,19 @@ def let_user_choose_item(items_iterator, items_per_page,
                 items_iterator, items_iterator_backup = new_iterators
                 continue
             else:
-                return (UserSelectionType.SKIPPED_SELECTION, None)
+                return (user_selection_types.SKIPPED_SELECTION, None)
         else:
-            return (UserSelectionType.NO_ITEMS_TO_SELECT_FROM, None)
+            return (user_selection_types.NO_ITEMS_TO_SELECT_FROM, None)
 
         for item in enumerate(current_items, 1):
             item_printer(*item)
 
-        if ((autoselect_mode == AutoselectModes.AUTOSELECT_IF_ONLY and
+        if ((autoselect_mode == autoselection_modes.AUTOSELECT_IF_ONLY and
              page_number == 1 and len(current_items) == 1) or
-                (autoselect_mode == AutoselectModes.ALWAYS_AUTOSELECT)):
+                (autoselect_mode == autoselection_modes.ALWAYS_AUTOSELECT)):
             print("Automatically selected (1).")
             print()
-            return (UserSelectionType.ITEM_SELECTED, current_items[0])
+            return (user_selection_types.ITEM_SELECTED, current_items[0])
 
         c = let_user_choose_action(
                 prompt,
@@ -142,9 +142,9 @@ def let_user_choose_item(items_iterator, items_per_page,
                              ('s', "skip")]),
                 allowed_digits=range(1, items_per_page + 1))
         if c == 's':
-            return (UserSelectionType.SKIPPED_SELECTION, None)
+            return (user_selection_types.SKIPPED_SELECTION, None)
         elif c.isdigit():
-            return (UserSelectionType.ITEM_SELECTED,
+            return (user_selection_types.ITEM_SELECTED,
                     current_items[int(c) - 1])
         else:
             assert c == 'n'

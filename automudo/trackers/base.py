@@ -14,14 +14,19 @@ class Tracker(object):
     This interface provides functions for searching
     and downloading torrents from the tracker.
     """
-    MAX_LOGIN_ATTEMPTS = 1
 
-    def __init__(self, user_agent):
+    # When inheriting this class, you should define a module-level
+    # constant named "name", containing the tracker's name
+
+    def __init__(self, user_agent=None):
         """
         Initializes the Tracker object.
         The user_agent parameter will be the user agent
         provided in HTTP requests to the tracker.
         """
+        if not user_agent:
+            raise ValueError("user-agent not specified")
+
         self.__session = requests.Session()
         self.__http_headers = {'User-Agent': user_agent}
 
@@ -94,7 +99,7 @@ class Tracker(object):
                 self._login()
             except TrackerLoginError as exception:
                 login_attempts += 1
-                if login_attempts > self.MAX_LOGIN_ATTEMPTS:
+                if login_attempts == 2:
                     raise exception
 
     def find_torrents_by_keywords(self, keywords):

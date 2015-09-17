@@ -5,6 +5,8 @@ class Rutracker(Tracker):
     """
     An implementation of the Tracker interface for rutracker.org
     """
+    name = "rutracker"
+
     def __init__(self, username, password, user_agent):
         """
         Initializes the Rutracker object.
@@ -19,8 +21,7 @@ class Rutracker(Tracker):
         self.__password = password
         super(Rutracker, self).__init__(user_agent)
 
-    @staticmethod
-    def _is_authenticated_user_response(response):
+    def _is_authenticated_user_response(self, response):
         """
             Implementation for Tracker._is_authenticated_user_response .
         """

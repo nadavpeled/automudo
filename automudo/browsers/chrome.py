@@ -9,8 +9,9 @@ class ChromeBrowser(Browser):
     """
     A Browser implementation for Chrome.
     """
-    @staticmethod
-    def _get_parsed_bookmarks_json():
+    name = "chrome"
+
+    def _get_parsed_bookmarks_json(self):
         """
             Returns Chrome's (or Chromium's) bookmarks JSON parsed.
             Assumes the user's chrome profile is 'Default'.
@@ -42,8 +43,7 @@ class ChromeBrowser(Browser):
 
         return bookmarks
 
-    @classmethod
-    def _get_all_bookmarks_under_node(cls, bookmark_node):
+    def _get_all_bookmarks_under_node(self, bookmark_node):
         """
             Returns a list of the chrome bookmarks under the given
             bookmarks node in the following format:
@@ -57,7 +57,7 @@ class ChromeBrowser(Browser):
                   returns the bookmarks from the bookmarks bar.
         """
         if 'roots' in bookmark_node:
-            return cls._get_all_bookmarks_under_node(
+            return self._get_all_bookmarks_under_node(
                 bookmark_node['roots']['bookmark_bar']
                 )
 
@@ -65,7 +65,7 @@ class ChromeBrowser(Browser):
         node_type = bookmark_node['type']
         if node_type == 'folder':
             inner_nodes = itertools.chain.from_iterable(
-                map(cls._get_all_bookmarks_under_node,
+                map(self._get_all_bookmarks_under_node,
                     bookmark_node['children'])
                 )
             result = [([node_name] + path, url) for (path, url) in inner_nodes]
@@ -77,10 +77,9 @@ class ChromeBrowser(Browser):
                              "whose type is not 'folder' or 'url': " +
                              str(bookmark_node))
 
-    @classmethod
-    def get_all_bookmarks(cls):
+    def get_all_bookmarks(self):
         """
             Implementation for Browser.get_all_bookmarks .
         """
-        parsed_bookmarks_json = cls._get_parsed_bookmarks_json()
-        return cls._get_all_bookmarks_under_node(parsed_bookmarks_json)
+        parsed_bookmarks_json = self._get_parsed_bookmarks_json()
+        return self._get_all_bookmarks_under_node(parsed_bookmarks_json)

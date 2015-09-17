@@ -2,28 +2,37 @@ import re
 
 import requests
 
-from automudo import config
-from .base import AlbumMetadata, MusicMetadataDB
+from .base import MusicMetadata, MusicMetadataDatabase
 
 
-class DiscogsMetadataDB(MusicMetadataDB):
+class DiscogsMetadataDatabase(MusicMetadataDatabase):
     """
-        A MusicMetadataDB implementation for Discogs.
+        A MusicMetadataDatabase implementation for Discogs.
     """
-    @staticmethod
-    def _find_album(search_string):
-        """
-            Implementation for MusicMetadataDB._find_album .
-        """
-        headers = {'User-Agent': config.USER_AGENT}
-        params = {
-            'token': config.DISCOGS_API_KEY,
-            'type': "master",
-            'q': search_string,
-            'per_page': 1,
-            'page': 1
-            }
+    name = "discogs"
 
+    def __init__(self, user_agent=None, api_key=None):
+        """
+            Initializes the DiscogsMetadataDatabase instance.
+        """
+        if not user_agent:
+            raise ValueError("user-agent not specified")
+        elif not api_key:
+            raise ValueError("API Key not specified")
+
+        self._user_agent = user_agent
+        self._api_key = api_key
+
+    def _find_album(self, search_string):
+        """
+            Implementation for MusicMetadataDatabase._find_album .
+        """
+        headers = {'User-Agent': self._user_agent}
+        params = {'token': self._api_key,
+                  'type': "master",
+                  'q': search_string,
+                  'per_page': 1,
+                  'page': 1}
         # The release formats are specified in the order of preference.
         # "" means any format.
         for release_format in ["album", "vinyl", "cd", "lp", ""]:
@@ -61,9 +70,9 @@ class DiscogsMetadataDB(MusicMetadataDB):
         # might not be as successful.
         title = re.sub(r"\([^\)]*\)", "", title)
 
-        return AlbumMetadata(artist=artist, title=title,
+        return MusicMetadata(artist=artist, title=title,
                              genres=result.get('style', None),
                              date=result.get('year', None),
                              formats=result.get('format', None),
                              release_id=result['id'],
-                             metadata_db_name="discogs")
+                             metadata_database_name=self.name)

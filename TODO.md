@@ -6,11 +6,12 @@
 - [x] setup.py
 - [x] Skip albums which we have already downloaded torrents for
 - [x] If a bookmark has no matches in the metadata db, skip it in the next run
-- [ ] Make automudo more autonomous
+- [x] Make album matching more autonomous
+- [ ] Make torrent matching more autonomous
 - [ ] Remove bookmarks of already downloaded albums
 - [ ] Look for discography when there are no matches in the tracker
 - [ ] Let the user manually enter album details instead of using a metadata db
-- [ ] Change the configuration file format
+- [x] Change the configuration file format
 - [x] Unix support
 - [ ] Get a list of music bookmarks from browsers other than Chrome
 - [ ] Get a list of albums from youtube playlist

@@ -2,17 +2,21 @@ import re
 import difflib
 from collections import namedtuple
 
-AlbumMetadata = namedtuple('AlbumMetadata',
+MusicMetadata = namedtuple('MusicMetadata',
                            ['artist', 'title', 'genres',
                             'date', 'formats',
-                            'release_id', 'metadata_db_name'])
+                            'release_id', 'metadata_database_name'])
 
 
-class MusicMetadataDB(object):
+class MusicMetadataDatabase(object):
     """
         An interface representing a music metadata database.
         This interface provides functions for searching music metadata.
     """
+
+    # When inheriting this class, you should define a module-level
+    # constant named "name", containing the database's name
+
     # Unwanted keywords that should be removed from search strings.
     _UNWANTED_SEARCH_KEYWORDS = [
         "youtube", "rdio", "grooveshark", "- profile -",
@@ -31,8 +35,7 @@ class MusicMetadataDB(object):
         for k in _UNWANTED_SEARCH_KEYWORDS
         ]
 
-    @classmethod
-    def find_album(cls, search_string):
+    def find_album(self, search_string):
         """
             Finds an album in the metadata database matching the search string.
 
@@ -42,10 +45,10 @@ class MusicMetadataDB(object):
             Returns:
                 (album, probability) tuple.
         """
-        normalized_search_string = cls._normalize_album_search_string(
+        normalized_search_string = self._normalize_album_search_string(
             search_string
             )
-        album = cls._find_album(normalized_search_string)
+        album = self._find_album(normalized_search_string)
         if album:
             probability = difflib.SequenceMatcher(
                 a=normalized_search_string.lower(),
@@ -55,15 +58,13 @@ class MusicMetadataDB(object):
             probability = 0
         return album, probability
 
-    @staticmethod
-    def _find_album(search_string):
+    def _find_album(self, search_string):
         """
-            The DB-specific implementation for find_album.
+            The database-specific implementation for find_album.
         """
         raise NotImplementedError()
 
-    @classmethod
-    def _normalize_album_search_string(cls, search_string):
+    def _normalize_album_search_string(self, search_string):
         """
         "Normalizes" an album search string, by performing the following:
         1. lowercasing it
@@ -82,7 +83,7 @@ class MusicMetadataDB(object):
             r"(\([^\)]*\)|\({^\}]*\}|\[{^\]*\])", "", search_string
             )
 
-        for regex in cls._UNWANTED_KEYWORDS_REGEXES:
+        for regex in self._UNWANTED_KEYWORDS_REGEXES:
             search_string = regex.sub("", search_string)
 
         # Replace sequences of spaces and tabs with a single space.
