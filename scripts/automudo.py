@@ -3,6 +3,8 @@ import os
 import re
 import csv
 
+from appdirs import user_data_dir
+
 from automudo import config
 from automudo.ui import cui
 from automudo.ui.user_selection import UserSelectionType
@@ -12,8 +14,7 @@ from automudo.music_metadata_db.base import AlbumMetadata
 from automudo.music_metadata_db.discogs import DiscogsMetadataDB
 
 
-# TODO: Move this file to the user's appdata (or something else in Unix)
-TITLES_TO_SKIP_FILE = os.path.join(config.TORRENTS_DIR,
+TITLES_TO_SKIP_FILE = os.path.join(user_data_dir('Automudo', 'Automudo'),
                                    ".automudo_permanent_skips.csv")
 
 
@@ -140,7 +141,7 @@ def find_album_or_ask_user(title, metadata_db):
             'Match [{:.2%}]:  {} - {}'.format(
                 probability, album.artist, album.title
                 )
-               ))
+            ))
 
     print()
     return (UserSelectionType.ITEM_SELECTED, album)
@@ -160,13 +161,17 @@ def download_albums_by_titles(titles_to_download,
             torrents_dir - the directory into which the downloaded torrents
                            will be written
     """
-    should_write_header = not os.path.exists(TITLES_TO_SKIP_FILE)
+    file_existed = os.path.exists(TITLES_TO_SKIP_FILE)
+    if not file_existed:
+        # Make sure that the directory exists
+        os.makedirs(os.path.dirname(TITLES_TO_SKIP_FILE), exist_ok=True)
+
     with open(TITLES_TO_SKIP_FILE, "a+", newline="") as output_file:
         skipped_titles_file_writer = csv.DictWriter(
             output_file,
             ['bookmark-title', 'release-id', 'metadata-db-name', 'reason']
             )
-        if should_write_header:
+        if not file_existed:
             skipped_titles_file_writer.writeheader()
 
         for title in titles_to_download:
