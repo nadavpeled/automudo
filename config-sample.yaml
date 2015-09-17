@@ -9,9 +9,9 @@ browser:
   browsers:
     chrome:
       # No settings needed.
-music_metadata_database:
+music_database:
   use: discogs
-  databases:
+  music_databases:
     discogs:
       # 1. register in https://www.discogs.com/developers/
       # 2. create a server key

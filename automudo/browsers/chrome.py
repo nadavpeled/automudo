@@ -11,6 +11,12 @@ class ChromeBrowser(Browser):
     """
     name = "chrome"
 
+    def __init__(self):
+        """
+            Initializes the ChromeBrowser instance.
+        """
+        pass
+
     def _get_parsed_bookmarks_json(self):
         """
             Returns Chrome's (or Chromium's) bookmarks JSON parsed.

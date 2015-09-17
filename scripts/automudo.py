@@ -16,10 +16,6 @@ from automudo.music_metadata_databases.base import MusicMetadata
 TITLES_TO_SKIP_FILE = os.path.join(user_data_dir('Automudo', 'Automudo'),
                                    ".automudo_permanent_skips.csv")
 
-# TODO: get this out of here
-with open("config.yaml") as config_file:
-    config = yaml.load(config_file)
-
 
 def choose_torrent_for_album(album, tracker, items_per_page,
                              torrents_autoselection_mode):
@@ -219,29 +215,55 @@ def download_albums_by_titles(titles_to_download, metadata_database,
                     })
 
 
-def main():
+def read_selection_field_from_config(config, field_name):
+    """
+        Reads a selection field as (selected-option, selected-option-settings).
+        Assumes the field looks similar to this:
+            fruit:
+              use: banana
+              fruits:
+                banana:
+                  taste: good
+                apple:
+                  taste: ok
+        (meaning banana is the selected fruit
+         and that it's taste field has the value 'good').
+    """
+    selected = config[field_name]['use']
+    all_field_configs = config[field_name]['{}s'.format(field_name)]
+    settings_for_selected = all_field_configs[selected]
+    if not settings_for_selected:
+        settings_for_selected = dict()
+
+    return (selected, settings_for_selected)
+
+
+def main(config):
     """
         The entry point of the automudo program.
     """
-    browser_name = config['browser']['use']
-    browser_settings = config['browser']['browsers'][browser_name]
-    browser_settings = browser_settings if browser_settings else dict()
-    browser = create_browser(browser_name, **browser_settings)
-
-    database_name = config['music_metadata_database']['use']
-    database_settings = config['music_metadata_database']['databases'][database_name]
-    database_settings = database_settings if database_settings else dict()
-    metadata_database = create_music_metadata_database(
-        database_name, user_agent=config['advanced']['user_agent'],
-        **config['music_metadata_database']['databases'][database_name]
+    browser_name, browser_settings = read_selection_field_from_config(
+        config, 'browser'
+        )
+    browser = create_browser(
+        browser_name,
+        **browser_settings
         )
 
-    tracker_name = config['tracker']['use']
-    tracker_settings = config['tracker']['trackers'][tracker_name]
-    tracker_settings = tracker_settings if tracker_settings else dict()
+    database_name, database_settings = read_selection_field_from_config(
+        config, 'music_database'
+        )
+    metadata_database = create_music_metadata_database(
+        database_name, user_agent=config['advanced']['user_agent'],
+        **database_settings
+        )
+
+    tracker_name, tracker_settings = read_selection_field_from_config(
+        config, 'tracker'
+        )
     tracker = create_tracker(
         tracker_name, user_agent=config['advanced']['user_agent'],
-        **config['tracker']['trackers'][tracker_name]
+        **tracker_settings
         )
 
     user_music_bookmarks_titles = browser.get_music_bookmarks_titles()
@@ -262,4 +284,7 @@ def main():
         )
 
 if __name__ == '__main__':
-    main()
+    with open("config.yaml") as config_file:
+        config_dict = yaml.load(config_file)
+
+    main(config_dict)
