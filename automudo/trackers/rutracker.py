@@ -48,7 +48,10 @@ class Rutracker(Tracker):
             Implementation for Tracker.find_torrents_by_keywords .
         """
         url = 'http://rutracker.org/forum/tracker.php'
-        params = {'nm': " ".join(map('"{}"'.format, keywords))}
+        params = {
+            'nm': " ".join(map('"{}"'.format, keywords)),
+            'o': "10"  # Sort by seeders amount.
+            }
         response = self._http_request(url, 'GET', params=params)
         response = response.decode('windows-1251')
         for line in response.splitlines():
