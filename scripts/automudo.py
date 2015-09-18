@@ -11,6 +11,7 @@ from automudo.browsers.factory import create_browser
 from automudo.trackers.factory import create_tracker
 from automudo.music_metadata_databases.factory import create_music_metadata_database
 from automudo.music_metadata_databases.base import MusicMetadata
+from automudo.utils.data_sizes import build_data_size_string
 
 
 TITLES_TO_SKIP_FILE = os.path.join(user_data_dir('Automudo', 'Automudo'),
@@ -21,7 +22,7 @@ def choose_torrent_for_album(album, tracker, items_per_page,
                              torrents_autoselection_mode):
     """
     Lets the user choose a torrent of the given album in the given tracker.
-    Returns a tuple: (user-selection-type, torrent-id).
+    Returns a tuple: (user-selection-type, torrent-details).
 
     Note: might interact with the user for selecting a matching torrent,
           dependening on the user's chosen autoselection mode.
@@ -33,12 +34,21 @@ def choose_torrent_for_album(album, tracker, items_per_page,
         [album.artist, album.title]
         )
 
-    def print_torrent_description(result_number, result):
-        _, torrent_title = result
-        print("{}. {}".format(
-            result_number,
-            cui.get_printable_string(torrent_title)
-            ))
+    def print_torrent_description(result_number, torrent_details):
+        print("""
+[Torrent {}]
+title: {}
+size: {}
+seeders: {}
+leechers: {}
+category: {}""".format(
+    result_number,
+    cui.get_printable_string(torrent_details.title),
+    build_data_size_string(torrent_details.size_in_bytes),
+    torrent_details.seeders,
+    torrent_details.leechers,
+    cui.get_printable_string(torrent_details.category)
+    ))
         print()
 
     user_selection_type, chosen_item = cui.let_user_choose_item(
@@ -49,14 +59,14 @@ def choose_torrent_for_album(album, tracker, items_per_page,
         torrents_autoselection_mode
         )
 
-    torrent_id = None
+    torrent_details = None
     if user_selection_type == user_selection_types.ITEM_SELECTED:
-        torrent_id, _ = chosen_item
+        torrent_details = chosen_item
     elif user_selection_type == user_selection_types.NO_ITEMS_TO_SELECT_FROM:
         print("No matching torrents found.")
         print()
 
-    return (user_selection_type, torrent_id)
+    return (user_selection_type, torrent_details)
 
 
 def download_album_torrent(album, tracker, torrents_dir, **ui_settings):
@@ -74,7 +84,7 @@ def download_album_torrent(album, tracker, torrents_dir, **ui_settings):
 
     Note: might interacts with the user for selecting a matching torrent.
     """
-    user_selection_type, torrent_id = choose_torrent_for_album(
+    user_selection_type, torrent_details = choose_torrent_for_album(
         album, tracker, **ui_settings
         )
 
@@ -82,13 +92,16 @@ def download_album_torrent(album, tracker, torrents_dir, **ui_settings):
         torrent_file_name = re.sub(
             r'[\/:*?"<>|]', '_',
             "{} - {} [{}].torrent".format(album.artist, album.title,
-                                          torrent_id)
+                                          torrent_details.torrent_id)
             )
         torrent_file_path = os.path.join(torrents_dir, torrent_file_name)
 
         os.makedirs(torrents_dir, exist_ok=True)
         with open(torrent_file_path, "wb") as torrent_file:
-            torrent_file.write(tracker.get_torrent_file_contents(torrent_id))
+            torrent_file_contents = tracker.get_torrent_file_contents(
+                torrent_details.torrent_id
+                )
+            torrent_file.write(torrent_file_contents)
 
     return user_selection_type
 

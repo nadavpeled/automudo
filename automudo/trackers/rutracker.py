@@ -1,4 +1,9 @@
-from .base import Tracker, TrackerLoginError
+import re
+import html
+
+from .base import Tracker, TrackerLoginError, TorrentDetails
+from ..utils.data_sizes import parse_data_size_string
+from ..utils.html_parse import find_html_tags_by_type, search_html_tag_by_type, get_text
 
 
 class Rutracker(Tracker):
@@ -43,9 +48,49 @@ class Rutracker(Tracker):
         if not self._is_authenticated_user_response(response):
             raise TrackerLoginError("Could not login to rutracker.")
 
+    def _extract_torrents_from_html(self, html_string):
+        """
+            Gets an HTTP response from the server as a string
+            and extracts TorrentDetails for each torrent in it.
+            returns an iterator of the TorrentDetails-s.
+        """
+        html_string = html_string.partition(' id="tor-tbl">')[2]
+        torrents_table_body = search_html_tag_by_type("tbody", html_string)
+        no_results = False
+        for row in find_html_tags_by_type("tr", torrents_table_body):
+            for cell in find_html_tags_by_type("td", row):
+                if "Не найдено" in cell:
+                    no_results = True
+                    break
+                cell = html.unescape(cell)
+                if "t-title" in cell:  # Torrent title.
+                    title = get_text(cell)
+                elif "f-name" in cell:  # Forum title.
+                    category = get_text(cell)
+                elif "tr-dl" in cell:  # Download link + torrent size.
+                    torrent_id = int(
+                        re.search(r'dl.php\?t=(.*?)">', cell).group(1)
+                        )
+                    size_string = search_html_tag_by_type("a", cell)
+                    size_string = size_string.rpartition(" ")[0]
+
+                    size_in_bytes = parse_data_size_string(size_string)
+                elif "seed" in cell:  # Seeders amount.
+                    seeders = int(search_html_tag_by_type("b", cell))
+                elif cell.startswith("<b>"):  # Leechers amount.
+                    leechers = int(search_html_tag_by_type("b", cell))
+            if not no_results:
+                yield TorrentDetails(title=title,
+                                     seeders=seeders, leechers=leechers,
+                                     size_in_bytes=size_in_bytes,
+                                     category=category, torrent_id=torrent_id,
+                                     tracker_name=self.name)
+
     def find_torrents_by_keywords(self, keywords):
         """
             Implementation for Tracker.find_torrents_by_keywords .
+
+            Note: does not look past the first search page.
         """
         url = 'http://rutracker.org/forum/tracker.php'
         params = {
@@ -54,10 +99,8 @@ class Rutracker(Tracker):
             }
         response = self._http_request(url, 'GET', params=params)
         response = response.decode('windows-1251')
-        for line in response.splitlines():
-            if ('tLink' in line) and ('viewtopic.php' in line):
-                yield (line.split('t=')[1].split('"')[0],
-                       line.split(">")[1].split("<")[0])
+
+        yield from self._extract_torrents_from_html(response)
 
     def get_torrent_file_contents(self, torrent_id):
         """

@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 import requests
 
 
@@ -6,6 +8,13 @@ class TrackerLoginError(Exception):
         Represents tracker login failure.
     """
     pass
+
+
+TorrentDetails = namedtuple(
+    "TorrentDetails",
+    ["title", "seeders", "leechers", "size_in_bytes",
+     "category", "torrent_id", "tracker_name"]
+    )
 
 
 class Tracker(object):
