@@ -36,10 +36,8 @@ class ChromeBrowser(Browser):
         bookmarks = None
         for path in possible_bookmarks_file_paths:
             try:
-                with open(path, "rb") as bookmarks_file:
-                    bookmarks = json.loads(
-                        bookmarks_file.read().decode('utf-8')
-                        )
+                with open(path, "r", encoding="utf-8") as bookmarks_file:
+                    bookmarks = json.loads(bookmarks_file.read())
                 break
             except IOError:
                 continue

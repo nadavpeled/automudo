@@ -100,7 +100,8 @@ def get_titles_of_downloaded_albums():
         in the previous runs of the program.
     """
     try:
-        with open(TITLES_TO_SKIP_FILE, "r", newline="") as input_file:
+        with open(TITLES_TO_SKIP_FILE, "r",
+                  encoding="utf-8", newline="") as input_file:
             for row in csv.DictReader(input_file):
                 yield row['bookmark-title']
     except IOError:
@@ -170,7 +171,8 @@ def download_albums_by_titles(titles_to_download, metadata_database,
         # Make sure that the directory exists
         os.makedirs(os.path.dirname(TITLES_TO_SKIP_FILE), exist_ok=True)
 
-    with open(TITLES_TO_SKIP_FILE, "a+", newline="") as output_file:
+    with open(TITLES_TO_SKIP_FILE, "a+",
+              encoding="utf-8", newline="") as output_file:
         skipped_titles_file_writer = csv.DictWriter(
             output_file,
             ['bookmark-title', 'release-id', 'metadata-database-name', 'reason']
@@ -284,7 +286,7 @@ def main(config):
         )
 
 if __name__ == '__main__':
-    with open("config.yaml") as config_file:
+    with open("config.yaml", encoding="utf-8") as config_file:
         config_dict = yaml.load(config_file)
 
     main(config_dict)
