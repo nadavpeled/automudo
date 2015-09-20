@@ -12,7 +12,8 @@ class Rutracker(Tracker):
     """
     name = "rutracker"
 
-    def __init__(self, username, password, user_agent):
+    def __init__(self, username, password, user_agent,
+                 data_compression_type, allow_fancy_releases):
         """
         Initializes the Rutracker object.
 
@@ -21,10 +22,16 @@ class Rutracker(Tracker):
             password - password for the rutracker account
             user_agent - the user agent used for
                          HTTP requests from the tracker
+            data_compression_type - the required data compression type
+                                    (lossless / lossy) for downloads
+            allow_fancy_releases - allow 5.1, vinyl and other fancy releases
+                                   to be retreived as results
         """
+        super(Rutracker, self).__init__(user_agent)
         self.__username = username
         self.__password = password
-        super(Rutracker, self).__init__(user_agent)
+        self.__data_compression_type = data_compression_type.lower()
+        self.__allow_fancy_releases = allow_fancy_releases
 
     def _is_authenticated_user_response(self, response):
         """
@@ -56,12 +63,10 @@ class Rutracker(Tracker):
         """
         html_string = html_string.partition(' id="tor-tbl">')[2]
         torrents_table_body = search_html_tag_by_type("tbody", html_string)
-        no_results = False
         for row in find_html_tags_by_type("tr", torrents_table_body):
             for cell in find_html_tags_by_type("td", row):
                 if "Не найдено" in cell:
-                    no_results = True
-                    break
+                    return  # No results.
                 cell = html.unescape(cell)
                 if "t-title" in cell:  # Torrent title.
                     title = get_text(cell)
@@ -79,12 +84,30 @@ class Rutracker(Tracker):
                     seeders = int(search_html_tag_by_type("b", cell))
                 elif cell.startswith("<b>"):  # Leechers amount.
                     leechers = int(search_html_tag_by_type("b", cell))
-            if not no_results:
-                yield TorrentDetails(title=title,
-                                     seeders=seeders, leechers=leechers,
-                                     size_in_bytes=size_in_bytes,
-                                     category=category, torrent_id=torrent_id,
-                                     tracker_name=self.name)
+
+            # Verify that the user's requested compression type is matched.
+            # Forums in Rutracker have 4 possible suffixes:
+            # 1. "(lossy)" for lossy-only forum
+            # 2. "(lossless)" for lossless-only forum
+            # 3. "(lossy и lossless)" for forum with lossy and lossless music
+            #    (used in sub-forums for unpopular music)
+            # 4. No suffix, for "special" lossless music (vinyl, 5.1, ..)
+            #    or non-music contents.
+            if ((self.__data_compression_type == "lossy" and
+                     "lossy" not in category) or
+                (self.__data_compression_type == "lossless" and
+                     self.__allow_fancy_releases and
+                     category.endswith("(lossy)")) or
+                (self.__data_compression_type == "lossless" and
+                    not self.__allow_fancy_releases and
+                    not category.endswith("lossless)"))):
+                break
+
+            yield TorrentDetails(title=title,
+                                 seeders=seeders, leechers=leechers,
+                                 size_in_bytes=size_in_bytes,
+                                 category=category, torrent_id=torrent_id,
+                                 tracker_name=self.name)
 
     def find_torrents_by_keywords(self, keywords):
         """

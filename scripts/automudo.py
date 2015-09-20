@@ -18,8 +18,7 @@ TITLES_TO_SKIP_FILE = os.path.join(user_data_dir('Automudo', 'Automudo'),
                                    ".automudo_permanent_skips.csv")
 
 
-def choose_torrent_for_album(album, tracker, items_per_page,
-                             torrents_autoselection_mode):
+def choose_torrent_for_album(album, tracker, items_per_page):
     """
     Lets the user choose a torrent of the given album in the given tracker.
     Returns a tuple: (user-selection-type, torrent-details).
@@ -56,7 +55,7 @@ category: {}""".format(
         items_per_page,
         print_torrent_description,
         "Please choose a torrent",
-        torrents_autoselection_mode
+        autoselection_modes.AUTOSELECT_IF_ONLY
         )
 
     torrent_details = None
@@ -286,11 +285,6 @@ def main(config):
     titles_to_download = sorted(
         set(user_music_bookmarks_titles) - set(already_downloaded_titles)
         )
-
-    torrents_autoselection_mode = config['ui']['torrents_autoselection_mode']
-    if torrents_autoselection_mode not in autoselection_modes.ALL_MODES:
-        print("Invalid torrents autoselection mode.")
-        return
 
     download_albums_by_titles(
         titles_to_download, metadata_database, tracker,
