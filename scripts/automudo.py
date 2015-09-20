@@ -120,10 +120,36 @@ def get_titles_of_downloaded_albums():
         pass  # The downloads file does not exist.
 
 
-def find_album_or_ask_user(title, metadata_database):
+def get_album_details_from_user():
+    """
+        Gets album details from the user.
+        The user may choose to skip.
+
+        Returns:
+            (user-selection-type, album-metadata).
+    """
+    artist_name = input(
+        "Who is the artist? (Enter - skip, . - permanent skip): "
+        )
+    if artist_name.strip() == ".":
+        return (user_selection_types.PERMANENT_SKIP_REQUESTED, None)
+    elif not artist_name.strip():
+        return (user_selection_types.SKIPPED_SELECTION, None)
+    album_title = input("What is the album title? ")
+    print()
+
+    return (user_selection_types.ITEM_SELECTED,
+            MusicMetadata(artist=artist_name, title=album_title,
+                          genres=[], date=None, formats=None,
+                          release_id="", metadata_database_name="manual"))
+
+
+def find_album_or_ask_user(title, metadata_database, items_per_page):
     """
         Looks for an album by title in the given metadata database.
-        If no matching albums were found, asks the user for help.
+        If no matching albums were found, asks the user for help
+        (in which case, there will be items_per_page items per page).
+        The user may choose to skip.
 
         Returns:
             (user-selection-type, album-metadata).
@@ -132,28 +158,48 @@ def find_album_or_ask_user(title, metadata_database):
         cui.get_printable_string(title)
         ))
 
-    album, probability = metadata_database.find_album(title)
+    possible_matches = metadata_database.find_album(title)
 
+    if not possible_matches:
+        print('No matches were found.')
+        return get_album_details_from_user()
+
+    album, probability = possible_matches[0]
     # If the search string is a track name,
     # the matching probability will be lower than expected.
-    if ("album" not in title.lower()) and (0.5 < probability < 0.6):
-        probability = 0.6
+    if ("album" not in title.lower()) and probability < 0.6:
+        probability = probability * 11 / 10
 
-    if (not album) or probability < 0.6:
-        print("Couldn't autonomously find a match.")
-        artist_name = input(
-            "Who is the artist? (Enter - skip, . - permanent skip): "
+    if probability < 0.6:
+        print("""No album match was convincing enough.
+You can either choose from the possible albums or skip.
+For manually inserting details, choose skip.""")
+
+        def album_printer(result_number,
+                          album_and_probability):
+            album, _ = album_and_probability
+            print("""
+[Album {}]
+artist: {}
+title: {}""".format(result_number,
+    cui.get_printable_string(album.artist),
+    cui.get_printable_string(album.title)))
+            if album.date:
+                print("date:", album.date)
+            if album.genres:
+                print("genres:", ", ".join(album.genres))
+
+        user_selection_type, album_and_probability = cui.let_user_choose_item(
+            possible_matches, items_per_page,
+            album_printer, "Please choose an album",
+            autoselection_modes.NEVER_AUTOSELECT
             )
-        if artist_name.strip() == ".":
-            return (user_selection_types.PERMANENT_SKIP_REQUESTED, None)
-        elif not artist_name.strip():
-            return (user_selection_types.SKIPPED_SELECTION, None)
-        album_title = input("What is the album title? ")
-        print()
-
-        album = MusicMetadata(artist=artist_name, title=album_title,
-                              genres=[], date=None, formats=None,
-                              release_id="", metadata_database_name="manual")
+        if user_selection_type == user_selection_types.SKIPPED_SELECTION:
+            print("Entering manual selection mode..")
+            return get_album_details_from_user()
+        else:
+            album, _ = album_and_probability
+            return (user_selection_type, album)
     else:
         print(cui.get_printable_string(
             'Match [{:.2%}]:  {} - {}'.format(
@@ -194,7 +240,7 @@ def download_albums_by_titles(titles_to_download, metadata_database,
 
         for title in titles_to_download:
             user_selection_type, album = find_album_or_ask_user(
-                title, metadata_database
+                title, metadata_database, ui_settings['items_per_page']
                 )
             if user_selection_type == user_selection_types.PERMANENT_SKIP_REQUESTED:
                 skipped_titles_file_writer.writerow({
@@ -269,6 +315,7 @@ def main(config):
         )
     metadata_database = create_music_metadata_database(
         database_name, user_agent=config['advanced']['user_agent'],
+        max_results=config['ui']['items_per_page'],
         **database_settings
         )
 

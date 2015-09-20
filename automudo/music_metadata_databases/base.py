@@ -21,8 +21,8 @@ class MusicMetadataDatabase(object):
     _UNWANTED_SEARCH_KEYWORDS = [
         "youtube", "rdio", "grooveshark", "- profile -",
         "from the album", "full album", "debut album", "album",
-        "hd", "narrated", "composed", "by", "and", "track", "volume",
-        "disc", "cd", "vinyl", "lp", "ep"
+        "hd", "narrated", "composed", "by", "and", "track [a-z]?[0-9]*",
+        "track", "volume", "disc", "cd", "vinyl", "lp", "ep"
         ]
 
     # The regex pattern matches the keyword if:
@@ -43,20 +43,18 @@ class MusicMetadataDatabase(object):
                 search_string - the search string
 
             Returns:
-                (album, probability) tuple.
+                a list of (album, probability) tuples for possible candidates.
         """
         normalized_search_string = self._normalize_album_search_string(
             search_string
             )
-        album = self._find_album(normalized_search_string)
-        if album:
-            probability = difflib.SequenceMatcher(
-                a=normalized_search_string.lower(),
-                b=" ".join([album.artist.lower(), album.title.lower()])
-                ).ratio()
-        else:
-            probability = 0
-        return album, probability
+        possible_matches = self._find_album(normalized_search_string)
+        return [(album,
+                 difflib.SequenceMatcher(
+                     a=normalized_search_string.lower(),
+                     b=" ".join([album.artist.lower(), album.title.lower()])
+                 ).ratio())
+                for album in possible_matches]
 
     def _find_album(self, search_string):
         """
@@ -85,6 +83,8 @@ class MusicMetadataDatabase(object):
 
         for regex in self._UNWANTED_KEYWORDS_REGEXES:
             search_string = regex.sub("", search_string)
+
+        search_string = re.sub(" [_\W]+ ", " ", search_string)
 
         # Replace sequences of spaces and tabs with a single space.
         search_string = re.sub(r"\s+", " ", search_string)

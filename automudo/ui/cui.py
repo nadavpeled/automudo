@@ -98,7 +98,7 @@ def let_user_choose_item(items_iterator, items_per_page,
             autoselect_mode - items autoselection mode
 
         Returns:
-            A tuple: (user-selection-mode, chosen-item).
+            A tuple: (user-selection-type, chosen-item).
 
         Raises:
             NoItemsError - there are no items that
