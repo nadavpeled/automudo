@@ -63,7 +63,6 @@ class MusicMetadataDatabase(object):
         all_releases = self._find_album(normalized_search_string, False)
 
         found_a_good_release = False
-        fair_possible_releases = []
         for album in master_releases:
             probability = self._get_album_match_probability(
                 normalized_search_string, album
