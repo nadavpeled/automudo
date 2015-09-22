@@ -3,7 +3,8 @@ import html
 
 from .base import Tracker, TrackerLoginError, TorrentDetails
 from ..utils.data_sizes import parse_data_size_string
-from ..utils.html_parse import find_html_tags_by_type, search_html_tag_by_type, get_text
+from ..utils.html_parse import \
+    find_html_tags_by_type, search_html_tag_by_type, get_text
 
 
 class Rutracker(Tracker):
@@ -63,9 +64,9 @@ class Rutracker(Tracker):
                 "vinyl" in lowercase_title)
 
     def _extract_torrents_from_html(
-        self, html_string,
-        data_compression_type, allow_fancy_releases
-        ):
+            self, html_string,
+            data_compression_type, allow_fancy_releases
+            ):
         """
             Gets an HTTP response from the server as a string
             and extracts TorrentDetails for each torrent in it.
@@ -125,9 +126,9 @@ class Rutracker(Tracker):
                                  tracker_name=self.name)
 
     def find_torrents_by_keywords(
-        self, keywords,
-        data_compression_type=None, allow_fancy_releases=None
-        ):
+            self, keywords,
+            data_compression_type=None, allow_fancy_releases=None
+            ):
         """
             Implementation for Tracker.find_torrents_by_keywords .
 

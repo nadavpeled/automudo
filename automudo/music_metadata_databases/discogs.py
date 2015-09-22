@@ -41,16 +41,10 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             ).json()
 
         search_results = search_response['results']
+
         search_results = sorted(
             search_results,
-            key=lambda result:
-                (lambda formats:
-                     5 if "unofficial release" in formats
-                     else 4 if "single" in formats
-                     else 3 if "compilation" in formats
-                     else 2 if "album" not in formats
-                     else 1
-                )([str.lower(f) for f in result['format']])
+            key=lambda result: self._rank_release_formats(result['format'])
             )
 
         for result in search_results:
@@ -62,7 +56,7 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             last_join = ""
             for single_artist in album_details['artists']:
                 if last_join:
-                    if re.match("\w", last_join[0]):
+                    if re.match(r"\w", last_join[0]):
                         artist += " "
                     artist += "{} ".format(last_join)
                 artist += single_artist['name']
@@ -117,3 +111,21 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
                                 release_id=album_details['id'],
                                 metadata_database_name=self.name,
                                 tracks=tracks)
+
+    @staticmethod
+    def _rank_release_formats(formats):
+        """
+            Ranks the release formats.
+            The better the formats, the lower the rank.
+        """
+        formats = [str.lower(f) for f in formats]
+        if "unofficial release" in formats:
+            return 5
+        elif "single" in formats:
+            return 4
+        elif "compilation" in formats:
+            return 3
+        elif "album" not in formats:
+            return 2
+        else:
+            return 1

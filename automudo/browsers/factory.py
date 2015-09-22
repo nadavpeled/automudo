@@ -2,6 +2,7 @@ from .chrome import ChromeBrowser
 
 SUPPORTED_BROWSERS = [ChromeBrowser]
 
+
 def create_browser(browser_name, **kwargs):
     """
         Finds the class that inherits Browser

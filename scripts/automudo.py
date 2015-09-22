@@ -10,7 +10,8 @@ from appdirs import user_data_dir
 from automudo.ui import cui, user_selection_types, autoselection_modes
 from automudo.browsers.factory import create_browser
 from automudo.trackers.factory import create_tracker
-from automudo.music_metadata_databases.factory import create_music_metadata_database
+from automudo.music_metadata_databases.factory \
+    import create_music_metadata_database
 from automudo.music_metadata_databases.base import MusicMetadata
 from automudo.utils.data_sizes import build_data_size_string
 
@@ -41,14 +42,12 @@ title: {}
 size: {}
 seeders: {}
 leechers: {}
-category: {}""".format(
-    result_number,
-    cui.get_printable_string(torrent_details.title),
-    build_data_size_string(torrent_details.size_in_bytes),
-    torrent_details.seeders,
-    torrent_details.leechers,
-    cui.get_printable_string(torrent_details.category)
-    ))
+category: {}""".format(result_number,
+                       cui.get_printable_string(torrent_details.title),
+                       build_data_size_string(torrent_details.size_in_bytes),
+                       torrent_details.seeders,
+                       torrent_details.leechers,
+                       cui.get_printable_string(torrent_details.category)))
         print()
 
     user_selection_type, chosen_item = cui.let_user_choose_item(
@@ -186,7 +185,8 @@ def download_albums_by_titles(titles_to_download, metadata_database,
 
         Parameters:
             titles_to_download - titles of tracks/albums to download
-            metadata_database - metadata database for searching a matching album
+            metadata_database - metadata database for searching
+                                a matching album
             tracker - the torrents tracker to download the albums from
             torrents_dir - the directory into which the downloaded torrents
                            will be written
@@ -201,7 +201,8 @@ def download_albums_by_titles(titles_to_download, metadata_database,
               encoding="utf-8", newline="") as output_file:
         skipped_titles_file_writer = csv.DictWriter(
             output_file,
-            ['bookmark-title', 'release-id', 'metadata-database-name', 'reason']
+            ['bookmark-title', 'release-id',
+             'metadata-database-name', 'reason']
             )
         if not file_existed:
             skipped_titles_file_writer.writeheader()

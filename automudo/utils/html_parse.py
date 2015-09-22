@@ -2,6 +2,7 @@ import re
 
 TAG_CONTENTS_REGEX = r"<{0}.*?>(.*?)</{0}>"
 
+
 def search_html_tag_by_type(tag_type, html_string):
     return re.search(
         TAG_CONTENTS_REGEX.format(tag_type),

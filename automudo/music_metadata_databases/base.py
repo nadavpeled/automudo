@@ -54,7 +54,7 @@ class MusicMetadataDatabase(object):
                 search_string - the search string
 
             Returns:
-                iterable of (album, probability) tuples for possible candidates.
+                iterable of (album, probability) tuples of good matches.
         """
         normalized_search_string = self._normalize_album_search_string(
             search_string
