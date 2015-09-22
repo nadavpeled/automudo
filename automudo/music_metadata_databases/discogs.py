@@ -45,7 +45,8 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             search_results,
             key=lambda result:
                 (lambda formats:
-                     4 if "single" in formats
+                     5 if "unofficial release" in formats
+                     else 4 if "single" in formats
                      else 3 if "compilation" in formats
                      else 2 if "album" not in formats
                      else 1
@@ -85,19 +86,23 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             # searches for albums by the metadata we provide
             # might not be as successful.
             title = re.sub(r"\([^\)]*\)", "", title)
+            title = re.sub(r"\[[^\]]*\]", "", title)
+            title = re.sub(r"\{[^\}]*\}", "", title)
 
-            tracks = [
-                TrackMetadata(
-                    title=track['title'],
-                    duration=None if not track['duration'] else (
-                            datetime.time(
-                                minute=int(track['duration'].split(':')[0]),
-                                second=int(track['duration'].split(':')[1])
-                            )
-                        )
-                    )
-                for track in album_details.get('tracklist', [])
-                ]
+            tracks = []
+            for track in album_details.get('tracklist', []):
+                if track['duration']:
+                    minute, second = map(int, track['duration'].split(':'))
+                    hour = int(minute / 60)
+                    minute = minute % 60
+                    duration = datetime.time(hour=hour,
+                                             minute=minute,
+                                             second=second)
+                else:
+                    duration = None
+
+                tracks.append(TrackMetadata(title=track['title'],
+                                            duration=duration))
 
             release_date = album_details.get('released', None)
             if release_date:

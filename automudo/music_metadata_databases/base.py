@@ -20,11 +20,19 @@ class MusicMetadataDatabase(object):
     # constant named "name", containing the database's name
 
     # Unwanted keywords that should be removed from search strings.
+    # Note that years are removed because the years found in some sources
+    # are not the year or release, causing problems in the search.
     _UNWANTED_SEARCH_KEYWORDS = [
         "youtube", "rdio", "grooveshark", "- profile -",
-        "from the album", "full album", "debut album", "album",
-        "hd", "narrated", "composed", "by", "and", "track [a-z]?[0-9]*",
-        "track", "volume", "disc", "cd", "vinyl", "lp", "ep"
+        "from the album", "full album", "album",
+        "debut", "self-titled", "self titled",
+        "hd", "narrated", "composed", "by",
+        "track [a-z]?[0-9]*", "track",
+        "volume [a-z]?[0-9]*", "volume",
+        "disc [a-z]?[0-9]*", "disc",
+        "cd [a-z]?[0-9]*", "cd",
+        "vinyl", "lp", "ep",
+        "18[8-9][0-9]", "19[0-9][0-9]", "2[0-9][0-9][0-9]"
         ]
 
     # The regex pattern matches the keyword if:
@@ -64,7 +72,7 @@ class MusicMetadataDatabase(object):
                              b=" ".join([album.artist.lower(),
                                          track.title.lower()])
                              ).ratio()
-                         for track in album.tracks])
+                         for track in album.tracks] + [0])
                  )) for album in possible_matches]
 
     def _find_album(self, search_string):
@@ -89,13 +97,14 @@ class MusicMetadataDatabase(object):
 
         # Remove comments.
         search_string = re.sub(
-            r"(\([^\)]*\)|\({^\}]*\}|\[{^\]*\])", "", search_string
+            r"(\([^\)]*\)|\{[^\}]*\}|\[[^\]]*\])", "", search_string
             )
 
         for regex in self._UNWANTED_KEYWORDS_REGEXES:
             search_string = regex.sub("", search_string)
 
-        search_string = re.sub(" [_\W]+ ", " ", search_string)
+        # Remove characters which are not letters or numbers.
+        search_string = re.sub(r"(\s|^)[_\W]+(\s|$)", " ", search_string)
 
         # Replace sequences of spaces and tabs with a single space.
         search_string = re.sub(r"\s+", " ", search_string)
