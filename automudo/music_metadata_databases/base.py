@@ -5,7 +5,9 @@ from collections import namedtuple
 MusicMetadata = namedtuple('MusicMetadata',
                            ['artist', 'title', 'genres',
                             'date', 'formats',
-                            'release_id', 'metadata_database_name'])
+                            'release_id', 'metadata_database_name',
+                            'tracks'])
+TrackMetadata = namedtuple('TrackMetadata', ['title', 'duration'])
 
 
 class MusicMetadataDatabase(object):
@@ -50,11 +52,20 @@ class MusicMetadataDatabase(object):
             )
         possible_matches = self._find_album(normalized_search_string)
         return [(album,
-                 difflib.SequenceMatcher(
-                     a=normalized_search_string.lower(),
-                     b=" ".join([album.artist.lower(), album.title.lower()])
-                 ).ratio())
-                for album in possible_matches]
+                 max(
+                     difflib.SequenceMatcher(
+                         a=normalized_search_string,
+                         b=" ".join([album.artist.lower(),
+                                     album.title.lower()])
+                         ).ratio(),
+                     max([
+                         difflib.SequenceMatcher(
+                             a=normalized_search_string,
+                             b=" ".join([album.artist.lower(),
+                                         track.title.lower()])
+                             ).ratio()
+                         for track in album.tracks])
+                 )) for album in possible_matches]
 
     def _find_album(self, search_string):
         """

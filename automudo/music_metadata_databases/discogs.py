@@ -3,7 +3,7 @@ import datetime
 
 import requests
 
-from .base import MusicMetadata, MusicMetadataDatabase
+from .base import MusicMetadata, TrackMetadata, MusicMetadataDatabase
 
 
 class DiscogsMetadataDatabase(MusicMetadataDatabase):
@@ -61,7 +61,7 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             last_join = ""
             for single_artist in album_details['artists']:
                 if last_join:
-                    if(re.match("\w", last_join[0])):
+                    if re.match("\w", last_join[0]):
                         artist += " "
                     artist += "{} ".format(last_join)
                 artist += single_artist['name']
@@ -86,12 +86,26 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             # might not be as successful.
             title = re.sub(r"\([^\)]*\)", "", title)
 
-            release_date = result.get('released', None)
+            tracks = [
+                TrackMetadata(
+                    title=track['title'],
+                    duration=None if not track['duration'] else (
+                            datetime.time(
+                                minute=int(track['duration'].split(':')[0]),
+                                second=int(track['duration'].split(':')[1])
+                            )
+                        )
+                    )
+                for track in album_details.get('tracklist', [])
+                ]
+
+            release_date = album_details.get('released', None)
             if release_date:
                 release_date = datetime.date(*('-'.split(release_date)))
             yield MusicMetadata(artist=artist, title=title,
-                                genres=result.get('styles', None),
+                                genres=album_details.get('styles', None),
                                 date=release_date,
                                 formats=result.get('format', None),
-                                release_id=result['id'],
-                                metadata_database_name=self.name)
+                                release_id=album_details['id'],
+                                metadata_database_name=self.name,
+                                tracks=tracks)

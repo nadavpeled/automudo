@@ -165,12 +165,8 @@ def find_album_or_ask_user(title, metadata_database, items_per_page):
         return get_album_details_from_user()
 
     album, probability = possible_matches[0]
-    # If the search string is a track name,
-    # the matching probability will be lower than expected.
-    if ("album" not in title.lower()) and probability < 0.6:
-        probability = probability * 11 / 10
-
     if probability < 0.6:
+        print()
         print("""No album match was convincing enough.
 You can either choose from the possible albums or skip.
 For manually inserting details, choose skip.""")
@@ -348,4 +344,7 @@ if __name__ == '__main__':
     with open("config.yaml", encoding="utf-8") as config_file:
         config_dict = yaml.load(config_file)
 
-    main(config_dict)
+    try:
+        main(config_dict)
+    except KeyboardInterrupt:
+        print("Good bye!")
