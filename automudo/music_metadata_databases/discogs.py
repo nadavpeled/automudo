@@ -25,13 +25,13 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
         self._api_key = api_key
         self._max_results = max_results if max_results else 3
 
-    def _find_album(self, search_string):
+    def _find_album(self, search_string, master_releases):
         """
             Implementation for MusicMetadataDatabase._find_album .
         """
         headers = {'User-Agent': self._user_agent}
         params = {'token': self._api_key,
-                  'type': "master",
+                  'type': "master" if master_releases else "release",
                   'q': search_string,
                   'per_page': self._max_results,
                   'page': 1}
@@ -106,7 +106,10 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
 
             release_date = album_details.get('released', None)
             if release_date:
-                release_date = datetime.date(*('-'.split(release_date)))
+                release_date = [int(x) for x in release_date.split("-")]
+                while len(release_date) < 3:
+                    release_date.append(1)  # Fictive month/day.
+                release_date = datetime.date(*release_date)
             yield MusicMetadata(artist=artist, title=title,
                                 genres=album_details.get('styles', None),
                                 date=release_date,

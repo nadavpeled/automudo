@@ -48,6 +48,7 @@ class MusicMetadataDatabase(object):
     def find_album(self, search_string):
         """
             Finds an album in the metadata database matching the search string.
+            Only returns good matches (>60% probability in a SequenceMatcher).
 
             Parameters:
                 search_string - the search string
@@ -58,25 +59,44 @@ class MusicMetadataDatabase(object):
         normalized_search_string = self._normalize_album_search_string(
             search_string
             )
-        possible_matches = self._find_album(normalized_search_string)
-        for album in possible_matches:
-            yield (album,
-                   max(
-                       difflib.SequenceMatcher(
-                           a=normalized_search_string,
-                           b=" ".join([album.artist.lower(),
-                                       album.title.lower()])
-                           ).ratio(),
-                       max([
-                           difflib.SequenceMatcher(
-                               a=normalized_search_string,
-                               b=" ".join([album.artist.lower(),
-                                           track.title.lower()])
-                               ).ratio()
-                           for track in album.tracks] + [0])
-                   ))
+        master_releases = self._find_album(normalized_search_string, True)
+        all_releases = self._find_album(normalized_search_string, False)
 
-    def _find_album(self, search_string):
+        found_a_good_release = False
+        fair_possible_releases = []
+        for album in master_releases:
+            probability = self._get_album_match_probability(
+                normalized_search_string, album
+                )
+            if probability > 0.6:
+                found_a_good_release = True
+                yield (album, probability)
+
+        if not found_a_good_release:
+            for album in all_releases:
+                probability = self._get_album_match_probability(
+                    normalized_search_string, album
+                    )
+                if probability > 0.6:
+                    found_a_good_release = True
+                    yield (album, probability)
+
+    @staticmethod
+    def _get_album_match_probability(normalized_search_string, album):
+        album_match_probability = difflib.SequenceMatcher(
+           a=normalized_search_string,
+           b=" ".join([album.artist.lower(),
+                       album.title.lower()])
+           ).ratio()
+        best_track_match_probability = max(
+            [difflib.SequenceMatcher(
+                a=normalized_search_string,
+                b=" ".join([album.artist.lower(),
+                            track.title.lower()])
+                ).ratio() for track in album.tracks] + [0])
+        return max(album_match_probability, best_track_match_probability)
+
+    def _find_album(self, search_string, master_releases_only):
         """
             The database-specific implementation for find_album.
         """

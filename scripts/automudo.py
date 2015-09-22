@@ -161,51 +161,20 @@ def find_album_or_ask_user(title, metadata_database, items_per_page):
         ))
 
     possible_matches = metadata_database.find_album(title)
-    possible_matches, possible_matches_2 = itertools.tee(possible_matches)
-    first_match = next(possible_matches_2, None)
+    # find_album only returns good matches, simply take the first.
+    first_match = next(possible_matches, None)
     if not first_match:
         print('No matches were found.')
-        return get_album_details_from_user()
+        album_details = get_album_details_from_user()
+        print()
+        return album_details
 
     album, probability = first_match
-    if probability < 0.6:
-        print()
-        print("""No album match was convincing enough.
-You can either choose from the possible albums or skip.
-For manually inserting details, choose skip.""")
-
-        def album_printer(result_number,
-                          album_and_probability):
-            album, _ = album_and_probability
-            print("""
-[Album {}]
-artist: {}
-title: {}""".format(result_number,
-    cui.get_printable_string(album.artist),
-    cui.get_printable_string(album.title)))
-            if album.date:
-                print("date:", album.date)
-            if album.genres:
-                print("genres:", ", ".join(album.genres))
-
-        user_selection_type, album_and_probability = cui.let_user_choose_item(
-            possible_matches, items_per_page,
-            album_printer, "Please choose an album",
-            autoselection_modes.NEVER_AUTOSELECT
+    print(cui.get_printable_string(
+        'Match [{:.2%}]:  {} - {}'.format(
+            probability, album.artist, album.title
             )
-        if user_selection_type == user_selection_types.SKIPPED_SELECTION:
-            print("Entering manual selection mode..")
-            return get_album_details_from_user()
-        else:
-            album, _ = album_and_probability
-            return (user_selection_type, album)
-    else:
-        print(cui.get_printable_string(
-            'Match [{:.2%}]:  {} - {}'.format(
-                probability, album.artist, album.title
-                )
-            ))
-
+        ))
     print()
     return (user_selection_types.ITEM_SELECTED, album)
 
