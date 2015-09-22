@@ -18,7 +18,7 @@ TITLES_TO_SKIP_FILE = os.path.join(user_data_dir('Automudo', 'Automudo'),
                                    ".automudo_permanent_skips.csv")
 
 
-def choose_torrent_for_album(album, tracker, items_per_page):
+def choose_torrent_for_album(album, tracker, ui_settings):
     """
     Lets the user choose a torrent of the given album in the given tracker.
     Returns a tuple: (user-selection-type, torrent-details).
@@ -52,7 +52,7 @@ category: {}""".format(
 
     user_selection_type, chosen_item = cui.let_user_choose_item(
         available_torrents,
-        items_per_page,
+        ui_settings['items_per_page'],
         print_torrent_description,
         "Please choose a torrent",
         autoselection_modes.AUTOSELECT_IF_ONLY
@@ -68,7 +68,7 @@ category: {}""".format(
     return (user_selection_type, torrent_details)
 
 
-def download_album_torrent(album, tracker, torrents_dir, **ui_settings):
+def download_album_torrent(album, tracker, torrents_dir, ui_settings):
     """
     Downloads torrent for the music album.
 
@@ -84,7 +84,7 @@ def download_album_torrent(album, tracker, torrents_dir, **ui_settings):
     Note: might interacts with the user for selecting a matching torrent.
     """
     user_selection_type, torrent_details = choose_torrent_for_album(
-        album, tracker, **ui_settings
+        album, tracker, ui_settings
         )
 
     if user_selection_type == user_selection_types.ITEM_SELECTED:
@@ -212,7 +212,7 @@ title: {}""".format(result_number,
 
 
 def download_albums_by_titles(titles_to_download, metadata_database,
-                              tracker, torrents_dir, **ui_settings):
+                              tracker, torrents_dir, ui_settings):
     """
         Downloads torrents for the albums matching the given titles.
 
@@ -256,7 +256,7 @@ def download_albums_by_titles(titles_to_download, metadata_database,
             assert user_selection_type == user_selection_types.ITEM_SELECTED
 
             user_selection_type = download_album_torrent(
-                album, tracker, torrents_dir, **ui_settings
+                album, tracker, torrents_dir, ui_settings
                 )
             if user_selection_type == user_selection_types.NO_ITEMS_TO_SELECT_FROM:
                 skipped_titles_file_writer.writerow({
@@ -289,11 +289,16 @@ def read_selection_field_from_config(config, field_name):
         (meaning banana is the selected fruit
          and that it's taste field has the value 'good').
     """
+    all_configs_field_name = '{}s'.format(field_name)
     selected = config[field_name]['use']
-    all_field_configs = config[field_name]['{}s'.format(field_name)]
-    settings_for_selected = all_field_configs[selected]
-    if not settings_for_selected:
-        settings_for_selected = dict()
+    all_field_configs = config[field_name][all_configs_field_name]
+
+    # Merge settings of the field and the selection
+    settings_for_selected = config[field_name]
+    del settings_for_selected['use']
+    del settings_for_selected[all_configs_field_name]
+    if all_field_configs[selected] is not None:
+        settings_for_selected.update(all_field_configs[selected])
 
     return (selected, settings_for_selected)
 
@@ -336,7 +341,7 @@ def main(config):
     download_albums_by_titles(
         titles_to_download, metadata_database, tracker,
         os.path.expanduser(config['tracker']['output_directory']),
-        **config['ui']
+        config['ui']
         )
 
 if __name__ == '__main__':

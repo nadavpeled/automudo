@@ -12,26 +12,18 @@ class Rutracker(Tracker):
     """
     name = "rutracker"
 
-    def __init__(self, username, password, user_agent,
-                 data_compression_type, allow_fancy_releases):
+    def __init__(self, **config):
         """
         Initializes the Rutracker object.
 
         Parameters:
-            username - username for the rutracker account
-            password - password for the rutracker account
-            user_agent - the user agent used for
-                         HTTP requests from the tracker
-            data_compression_type - the required data compression type
-                                    (lossless / lossy) for downloads
-            allow_fancy_releases - allow 5.1, vinyl and other fancy releases
-                                   to be retreived as results
+            config - tracker configuration
         """
-        super(Rutracker, self).__init__(user_agent)
-        self.__username = username
-        self.__password = password
-        self.__data_compression_type = data_compression_type.lower()
-        self.__allow_fancy_releases = allow_fancy_releases
+        super(Rutracker, self).__init__(config['user_agent'])
+        self.__username = config['username']
+        self.__password = config['password']
+        self.__allow_fancy_releases = config['allow_fancy_releases']
+        self.__data_compression_type = config['data_compression_type']
 
     def _is_authenticated_user_response(self, response):
         """
@@ -55,7 +47,25 @@ class Rutracker(Tracker):
         if not self._is_authenticated_user_response(response):
             raise TrackerLoginError("Could not login to rutracker.")
 
-    def _extract_torrents_from_html(self, html_string):
+    @staticmethod
+    def _is_fancy_release(torrent_title):
+        """
+        Returns True if the given title describes
+        a fancy release, False otherwise.
+        """
+        lowercase_title = torrent_title.lower()
+        return (re.search(r"24([\W\s]+192|[\W\s]*bit)", lowercase_title) or
+                re.search(r"180[\W\s]*gram", lowercase_title) or
+                "sacd" in lowercase_title or
+                "dsd" in lowercase_title or
+                "5.1" in lowercase_title or
+                "dvd" in lowercase_title or
+                "vinyl" in lowercase_title)
+
+    def _extract_torrents_from_html(
+        self, html_string,
+        data_compression_type, allow_fancy_releases
+        ):
         """
             Gets an HTTP response from the server as a string
             and extracts TorrentDetails for each torrent in it.
@@ -93,15 +103,20 @@ class Rutracker(Tracker):
             #    (used in sub-forums for unpopular music)
             # 4. No suffix, for "special" lossless music (vinyl, 5.1, ..)
             #    or non-music contents.
-            if ((self.__data_compression_type == "lossy" and
-                     "lossy" not in category) or
-                (self.__data_compression_type == "lossless" and
-                     self.__allow_fancy_releases and
+            data_compression_type = data_compression_type.lower()
+            if ((data_compression_type == "lossy" and
+                 "lossy" not in category) or
+                    (data_compression_type == "lossless" and
+                     allow_fancy_releases and
                      category.endswith("(lossy)")) or
-                (self.__data_compression_type == "lossless" and
-                    not self.__allow_fancy_releases and
-                    not category.endswith("lossless)"))):
-                break
+                    (data_compression_type == "lossless" and
+                     not allow_fancy_releases and
+                     not category.endswith("lossless)"))):
+                continue
+
+            if (self._is_fancy_release(title) and
+                    not allow_fancy_releases):
+                continue
 
             yield TorrentDetails(title=title,
                                  seeders=seeders, leechers=leechers,
@@ -109,12 +124,20 @@ class Rutracker(Tracker):
                                  category=category, torrent_id=torrent_id,
                                  tracker_name=self.name)
 
-    def find_torrents_by_keywords(self, keywords):
+    def find_torrents_by_keywords(
+        self, keywords,
+        data_compression_type=None, allow_fancy_releases=None
+        ):
         """
             Implementation for Tracker.find_torrents_by_keywords .
 
             Note: does not look past the first search page.
         """
+        if data_compression_type is None:
+            data_compression_type = self.__data_compression_type
+        if allow_fancy_releases is None:
+            allow_fancy_releases = self.__allow_fancy_releases
+
         url = 'http://rutracker.org/forum/tracker.php'
         params = {
             'nm': " ".join(map('"{}"'.format, keywords)),
@@ -123,7 +146,9 @@ class Rutracker(Tracker):
         response = self._http_request(url, 'GET', params=params)
         response = response.decode('windows-1251')
 
-        yield from self._extract_torrents_from_html(response)
+        yield from self._extract_torrents_from_html(
+            response, data_compression_type, allow_fancy_releases
+            )
 
     def get_torrent_file_contents(self, torrent_id):
         """
