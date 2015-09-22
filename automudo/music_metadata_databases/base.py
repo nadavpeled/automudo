@@ -83,10 +83,10 @@ class MusicMetadataDatabase(object):
     @staticmethod
     def _get_album_match_probability(normalized_search_string, album):
         album_match_probability = difflib.SequenceMatcher(
-           a=normalized_search_string,
-           b=" ".join([album.artist.lower(),
-                       album.title.lower()])
-           ).ratio()
+            a=normalized_search_string,
+            b=" ".join([album.artist.lower(),
+                        album.title.lower()])
+            ).ratio()
         best_track_match_probability = max(
             [difflib.SequenceMatcher(
                 a=normalized_search_string,
