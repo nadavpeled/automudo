@@ -2,6 +2,7 @@
 import os
 import re
 import csv
+import itertools
 
 import yaml
 from appdirs import user_data_dir
@@ -141,7 +142,8 @@ def get_album_details_from_user():
     return (user_selection_types.ITEM_SELECTED,
             MusicMetadata(artist=artist_name, title=album_title,
                           genres=[], date=None, formats=None,
-                          release_id="", metadata_database_name="manual"))
+                          release_id="", metadata_database_name="manual",
+                          tracks=[]))
 
 
 def find_album_or_ask_user(title, metadata_database, items_per_page):
@@ -159,12 +161,13 @@ def find_album_or_ask_user(title, metadata_database, items_per_page):
         ))
 
     possible_matches = metadata_database.find_album(title)
-
-    if not possible_matches:
+    possible_matches, possible_matches_2 = itertools.tee(possible_matches)
+    first_match = next(possible_matches_2, None)
+    if not first_match:
         print('No matches were found.')
         return get_album_details_from_user()
 
-    album, probability = possible_matches[0]
+    album, probability = first_match
     if probability < 0.6:
         print()
         print("""No album match was convincing enough.

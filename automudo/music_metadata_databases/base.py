@@ -53,27 +53,28 @@ class MusicMetadataDatabase(object):
                 search_string - the search string
 
             Returns:
-                a list of (album, probability) tuples for possible candidates.
+                iterable of (album, probability) tuples for possible candidates.
         """
         normalized_search_string = self._normalize_album_search_string(
             search_string
             )
         possible_matches = self._find_album(normalized_search_string)
-        return [(album,
-                 max(
-                     difflib.SequenceMatcher(
-                         a=normalized_search_string,
-                         b=" ".join([album.artist.lower(),
-                                     album.title.lower()])
-                         ).ratio(),
-                     max([
-                         difflib.SequenceMatcher(
-                             a=normalized_search_string,
-                             b=" ".join([album.artist.lower(),
-                                         track.title.lower()])
-                             ).ratio()
-                         for track in album.tracks] + [0])
-                 )) for album in possible_matches]
+        for album in possible_matches:
+            yield (album,
+                   max(
+                       difflib.SequenceMatcher(
+                           a=normalized_search_string,
+                           b=" ".join([album.artist.lower(),
+                                       album.title.lower()])
+                           ).ratio(),
+                       max([
+                           difflib.SequenceMatcher(
+                               a=normalized_search_string,
+                               b=" ".join([album.artist.lower(),
+                                           track.title.lower()])
+                               ).ratio()
+                           for track in album.tracks] + [0])
+                   ))
 
     def _find_album(self, search_string):
         """
