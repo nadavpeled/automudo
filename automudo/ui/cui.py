@@ -80,9 +80,10 @@ def let_user_choose_action(prompt, actions_descriptions,
         if action_char in ['\r', '\n']:
             action_char = default_action_char
 
-        if ((action_char in actions_descriptions) or
+        if ((action_char.lower() in actions_descriptions) or
+                (action_char.upper() in actions_descriptions) or
                 (allowed_digits and action_char in allowed_digits_as_chars)):
-            return action_char
+            return action_char.lower()
 
 
 def let_user_choose_item(items_iterator, items_per_page,
