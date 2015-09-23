@@ -145,11 +145,10 @@ def get_album_details_from_user():
                           tracks=[]))
 
 
-def find_album_or_ask_user(title, metadata_database, items_per_page):
+def find_album_or_ask_user(title, metadata_database):
     """
         Looks for an album by title in the given metadata database.
-        If no matching albums were found, asks the user for help
-        (in which case, there will be items_per_page items per page).
+        If no matching albums were found, asks the user for help.
         The user may choose to skip.
 
         Returns:
@@ -209,7 +208,7 @@ def download_albums_by_titles(titles_to_download, metadata_database,
 
         for title in titles_to_download:
             user_selection_type, album = find_album_or_ask_user(
-                title, metadata_database, ui_settings['items_per_page']
+                title, metadata_database
                 )
             if user_selection_type == user_selection_types.PERMANENT_SKIP_REQUESTED:
                 skipped_titles_file_writer.writerow({
