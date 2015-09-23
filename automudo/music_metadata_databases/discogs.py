@@ -21,19 +21,37 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
         elif not api_key:
             raise ValueError("API Key not specified")
 
-        self._user_agent = user_agent
-        self._api_key = api_key
-        self._max_results = max_results if max_results else 3
+        self.__user_agent = user_agent
+        self.__api_key = api_key
+        self.__max_results = max_results if max_results else 3
+
+    @staticmethod
+    def _rank_release_formats(formats):
+        """
+            Ranks the release formats.
+            The better the formats, the lower the rank.
+        """
+        formats = [str.lower(f) for f in formats]
+        if "unofficial release" in formats:
+            return 5
+        elif "single" in formats:
+            return 4
+        elif "compilation" in formats:
+            return 3
+        elif "album" not in formats:
+            return 2
+        else:
+            return 1
 
     def _find_album(self, search_string, master_releases):
         """
             Implementation for MusicMetadataDatabase._find_album .
         """
-        headers = {'User-Agent': self._user_agent}
-        params = {'token': self._api_key,
+        headers = {'User-Agent': self.__user_agent}
+        params = {'token': self.__api_key,
                   'type': "master" if master_releases else "release",
                   'q': search_string,
-                  'per_page': self._max_results,
+                  'per_page': self.__max_results,
                   'page': 1}
         search_response = requests.get(
             "https://api.discogs.com/database/search",
@@ -111,21 +129,3 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
                                 release_id=album_details['id'],
                                 metadata_database_name=self.name,
                                 tracks=tracks)
-
-    @staticmethod
-    def _rank_release_formats(formats):
-        """
-            Ranks the release formats.
-            The better the formats, the lower the rank.
-        """
-        formats = [str.lower(f) for f in formats]
-        if "unofficial release" in formats:
-            return 5
-        elif "single" in formats:
-            return 4
-        elif "compilation" in formats:
-            return 3
-        elif "album" not in formats:
-            return 2
-        else:
-            return 1

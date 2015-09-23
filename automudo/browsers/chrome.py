@@ -17,7 +17,15 @@ class ChromeBrowser(Browser):
         """
         pass
 
-    def _get_parsed_bookmarks_json(self):
+    def get_all_bookmarks(self):
+        """
+            Implementation for Browser.get_all_bookmarks .
+        """
+        parsed_bookmarks_json = self._get_parsed_bookmarks_json()
+        return self._get_all_bookmarks_under_node(parsed_bookmarks_json)
+
+    @staticmethod
+    def _get_parsed_bookmarks_json():
         """
             Returns Chrome's (or Chromium's) bookmarks JSON parsed.
             Assumes the user's chrome profile is 'Default'.
@@ -80,10 +88,3 @@ class ChromeBrowser(Browser):
             raise ValueError("Found a chrome bookmark_node node "
                              "whose type is not 'folder' or 'url': " +
                              str(bookmark_node))
-
-    def get_all_bookmarks(self):
-        """
-            Implementation for Browser.get_all_bookmarks .
-        """
-        parsed_bookmarks_json = self._get_parsed_bookmarks_json()
-        return self._get_all_bookmarks_under_node(parsed_bookmarks_json)

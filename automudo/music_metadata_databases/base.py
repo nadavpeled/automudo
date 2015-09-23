@@ -22,7 +22,7 @@ class MusicMetadataDatabase(object):
     # Unwanted keywords that should be removed from search strings.
     # Note that years are removed because the years found in some sources
     # are not the year or release, causing problems in the search.
-    _UNWANTED_SEARCH_KEYWORDS = [
+    __UNWANTED_SEARCH_KEYWORDS = [
         "youtube", "rdio", "grooveshark", "- profile -",
         "from the album", "full album", "album",
         "debut", "self-titled", "self titled",
@@ -40,9 +40,9 @@ class MusicMetadataDatabase(object):
     #    or it's in the beginning of the string
     # 2. there is a non-alphabetic character after it
     #    or it's in the end of the string
-    _UNWANTED_KEYWORDS_REGEXES = [
+    __UNWANTED_KEYWORDS_REGEXES = [
         re.compile(r"(?:(?<=\W)|(?<=^)){}(?=\W|$)".format(k))
-        for k in _UNWANTED_SEARCH_KEYWORDS
+        for k in __UNWANTED_SEARCH_KEYWORDS
         ]
 
     def find_album(self, search_string):
@@ -95,13 +95,8 @@ class MusicMetadataDatabase(object):
                 ).ratio() for track in album.tracks] + [0])
         return max(album_match_probability, best_track_match_probability)
 
-    def _find_album(self, search_string, master_releases_only):
-        """
-            The database-specific implementation for find_album.
-        """
-        raise NotImplementedError()
-
-    def _normalize_album_search_string(self, search_string):
+    @classmethod
+    def _normalize_album_search_string(cls, search_string):
         """
         "Normalizes" an album search string, by performing the following:
         1. lowercasing it
@@ -120,7 +115,7 @@ class MusicMetadataDatabase(object):
             r"(\([^\)]*\)|\{[^\}]*\}|\[[^\]]*\])", "", search_string
             )
 
-        for regex in self._UNWANTED_KEYWORDS_REGEXES:
+        for regex in cls.__UNWANTED_KEYWORDS_REGEXES:
             search_string = regex.sub("", search_string)
 
         # Remove characters which are not letters or numbers.
@@ -130,3 +125,9 @@ class MusicMetadataDatabase(object):
         search_string = re.sub(r"\s+", " ", search_string)
 
         return search_string.strip()
+
+    def _find_album(self, search_string, master_releases_only):
+        """
+            The database-specific implementation for find_album.
+        """
+        raise NotImplementedError()

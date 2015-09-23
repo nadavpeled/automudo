@@ -26,6 +26,18 @@ class Rutracker(Tracker):
         self.__allow_fancy_releases = config['allow_fancy_releases']
         self.__data_compression_type = config['data_compression_type']
 
+    def get_torrent_file_contents(self, torrent_id):
+        """
+            Implementation for Tracker.get_torrent_file_contents .
+        """
+        viewtopic_url_format = "http://rutracker.org/forum/viewtopic.php?t={}"
+        referer_header = {'Referer': viewtopic_url_format.format(torrent_id)}
+        return self._http_request("http://dl.rutracker.org/forum/dl.php",
+                                  'GET',
+                                  params={'t': torrent_id},
+                                  cookies={'bb_dl': str(torrent_id)},
+                                  headers=referer_header)
+
     def _is_authenticated_user_response(self, response):
         """
             Implementation for Tracker._is_authenticated_user_response .
@@ -131,15 +143,3 @@ class Rutracker(Tracker):
         yield from self._extract_torrents_from_html(
             response, data_compression_type, allow_fancy_releases
             )
-
-    def get_torrent_file_contents(self, torrent_id):
-        """
-            Implementation for Tracker.get_torrent_file_contents .
-        """
-        viewtopic_url_format = "http://rutracker.org/forum/viewtopic.php?t={}"
-        referer_header = {'Referer': viewtopic_url_format.format(torrent_id)}
-        return self._http_request("http://dl.rutracker.org/forum/dl.php",
-                                  'GET',
-                                  params={'t': torrent_id},
-                                  cookies={'bb_dl': str(torrent_id)},
-                                  headers=referer_header)
