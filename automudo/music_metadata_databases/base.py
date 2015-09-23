@@ -31,7 +31,7 @@ class MusicMetadataDatabase(object):
         "volume [a-z]?[0-9]*", "volume",
         "disc [a-z]?[0-9]*", "disc",
         "cd [a-z]?[0-9]*", "cd",
-        "vinyl", "lp", "ep",
+        "vinyl", "lp", "ep", "feat", "vs",
         "18[8-9][0-9]", "19[0-9][0-9]", "2[0-9][0-9][0-9]"
         ]
 

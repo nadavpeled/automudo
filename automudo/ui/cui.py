@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 from unidecode import unidecode
 
-from . import user_selection_types, autoselection_modes
+from . import user_selection_types
 
 
 def get_char_from_terminal():
@@ -87,7 +87,7 @@ def let_user_choose_action(prompt, actions_descriptions,
 
 
 def let_user_choose_item(items_iterator, items_per_page,
-                         item_printer, prompt, autoselect_mode):
+                         item_printer, prompt):
     """
         Lets the user choose an item from a given iterator.
 
@@ -96,7 +96,6 @@ def let_user_choose_item(items_iterator, items_per_page,
             items_per_page - items shown in each items page
             item_printer - function that prints a given item
             prompt - the user prompt shown after each items page
-            autoselect_mode - items autoselection mode
 
         Returns:
             A tuple: (user-selection-type, chosen-item).
@@ -130,10 +129,8 @@ def let_user_choose_item(items_iterator, items_per_page,
         for item in enumerate(current_items, 1):
             item_printer(*item)
 
-        if ((autoselect_mode == autoselection_modes.AUTOSELECT_IF_ONLY and
-             page_number == 1 and len(current_items) == 1) or
-                (autoselect_mode == autoselection_modes.ALWAYS_AUTOSELECT)):
-            print("Automatically selected (1).")
+        if page_number == 1 and len(current_items) == 1:
+            print("Automatically selected #1.")
             print()
             return (user_selection_types.ITEM_SELECTED, current_items[0])
 

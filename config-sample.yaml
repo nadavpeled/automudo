@@ -19,11 +19,12 @@ tracker:
   use: rutracker
   # Note that ~ will be interpreted as your home directory in Windows too.
   output_directory: ~/Downloads/torrents
-  data_compression_type: lossy # lossless is another option
+  data_compression_type: lossless # lossy is another option
   # Allow 5.1 releases, vinyl, etc.
   # These releases are heavier and are harder to choose autonomously,
   # meaning your input will be needed more often.
   allow_fancy_releases: no
+  allow_remasters: no
   trackers:
     rutracker:
       # 1. register in: http://rutracker.org/forum/profile.php?mode=register

@@ -118,7 +118,8 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
 
             release_date = album_details.get('released', None)
             if release_date:
-                release_date = [int(x) for x in release_date.split("-")]
+                release_date = [max(1, int(x))
+                                for x in release_date.split("-")]
                 while len(release_date) < 3:
                     release_date.append(1)  # Fictive month/day.
                 release_date = datetime.date(*release_date)

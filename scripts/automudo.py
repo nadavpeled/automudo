@@ -7,7 +7,7 @@ import itertools
 import yaml
 from appdirs import user_data_dir
 
-from automudo.ui import cui, user_selection_types, autoselection_modes
+from automudo.ui import cui, user_selection_types
 from automudo.browsers.factory import create_browser
 from automudo.trackers.factory import create_tracker
 from automudo.music_metadata_databases.factory \
@@ -20,55 +20,40 @@ TITLES_TO_SKIP_FILE = os.path.join(user_data_dir('Automudo', 'Automudo'),
                                    ".automudo_permanent_skips.csv")
 
 
-def choose_torrent_for_album(album, tracker, ui_settings):
+def find_torrent_for_album(album, tracker,
+                           allow_fancy_releases=False, allow_remasters=False,
+                           **kwargs):
     """
-    Lets the user choose a torrent of the given album in the given tracker.
+    Finds a torrent of the given album in the given tracker.
     Returns a tuple: (user-selection-type, torrent-details).
-
-    Note: might interact with the user for selecting a matching torrent,
-          dependening on the user's chosen autoselection mode.
     """
-    print("Looking for torrents matching:  {}".format(
+    print("* * * * * Searching Torrent * * * * *")
+    print(
+        "For:",
         cui.get_printable_string(" - ".join([album.artist, album.title]))
-        ))
-    available_torrents = tracker.find_torrents_by_keywords(
-        [album.artist, album.title]
         )
-
-    def print_torrent_description(result_number, torrent_details):
-        print("""
-[Torrent {}]
-title: {}
-size: {}
-seeders: {}
-leechers: {}
-category: {}""".format(result_number,
-                       cui.get_printable_string(torrent_details.title),
-                       build_data_size_string(torrent_details.size_in_bytes),
-                       torrent_details.seeders,
-                       torrent_details.leechers,
-                       cui.get_printable_string(torrent_details.category)))
-        print()
-
-    user_selection_type, chosen_item = cui.let_user_choose_item(
-        available_torrents,
-        ui_settings['items_per_page'],
-        print_torrent_description,
-        "Please choose a torrent",
-        autoselection_modes.AUTOSELECT_IF_ONLY
+    torrent = tracker.find_best_torrent_by_keywords(
+        [album.artist, album.title],
+        allow_fancy_releases=allow_fancy_releases,
+        allow_remasters=allow_remasters
         )
+    if torrent is None:
+        print("No matching torrents were found.")
+        user_selection_type = user_selection_types.NO_ITEMS_TO_SELECT_FROM
+    else:
+        print(cui.get_printable_string(
+            "Match: {} [{}s/{}l, {}]".format(
+                torrent.title, torrent.seeders, torrent.leechers,
+                build_data_size_string(torrent.size_in_bytes)
+                )
+            ))
+        user_selection_type = user_selection_types.ITEM_SELECTED
 
-    torrent_details = None
-    if user_selection_type == user_selection_types.ITEM_SELECTED:
-        torrent_details = chosen_item
-    elif user_selection_type == user_selection_types.NO_ITEMS_TO_SELECT_FROM:
-        print("No matching torrents found.")
-        print()
-
-    return (user_selection_type, torrent_details)
+    print()
+    return (user_selection_type, torrent)
 
 
-def download_album_torrent(album, tracker, torrents_dir, ui_settings):
+def download_album_torrent(album, tracker, torrents_dir, **tracker_config):
     """
     Downloads torrent for the music album.
 
@@ -76,15 +61,15 @@ def download_album_torrent(album, tracker, torrents_dir, ui_settings):
         album - the metadata of the album to download
         tracker - the tracker to download from
         torrents_dir - the directory into which the torrents will be saved
-        ui_settings - the UI settings from the configuration file
+        tracker_config - the tracker's configuration
 
     Returns:
         user_selection_types of the torrent selection.
 
     Note: might interacts with the user for selecting a matching torrent.
     """
-    user_selection_type, torrent_details = choose_torrent_for_album(
-        album, tracker, ui_settings
+    user_selection_type, torrent_details = find_torrent_for_album(
+        album, tracker, **tracker_config
         )
 
     if user_selection_type == user_selection_types.ITEM_SELECTED:
@@ -154,15 +139,14 @@ def find_album_or_ask_user(title, metadata_database):
         Returns:
             (user-selection-type, album-metadata).
     """
-    print("Looking for an album matching:  {}".format(
-        cui.get_printable_string(title)
-        ))
+    print("* * * * * Searching Album * * * * *")
+    print("For:", cui.get_printable_string(title))
 
     possible_matches = metadata_database.find_album(title)
     # find_album only returns good matches, simply take the first.
     first_match = next(possible_matches, None)
     if not first_match:
-        print('No matches were found.')
+        print("Couldn't find metadata for album.")
         album_details = get_album_details_from_user()
         print()
         return album_details
@@ -174,11 +158,12 @@ def find_album_or_ask_user(title, metadata_database):
             )
         ))
     print()
+    print()
     return (user_selection_types.ITEM_SELECTED, album)
 
 
 def download_albums_by_titles(titles_to_download, metadata_database,
-                              tracker, torrents_dir, ui_settings):
+                              tracker, torrents_dir, **tracker_config):
     """
         Downloads torrents for the albums matching the given titles.
 
@@ -189,7 +174,7 @@ def download_albums_by_titles(titles_to_download, metadata_database,
             tracker - the torrents tracker to download the albums from
             torrents_dir - the directory into which the downloaded torrents
                            will be written
-            ui_settings - the UI settings from the configuration file
+            tracker_config - tracker configuration
     """
     file_existed = os.path.exists(TITLES_TO_SKIP_FILE)
     if not file_existed:
@@ -224,7 +209,7 @@ def download_albums_by_titles(titles_to_download, metadata_database,
             assert user_selection_type == user_selection_types.ITEM_SELECTED
 
             user_selection_type = download_album_torrent(
-                album, tracker, torrents_dir, ui_settings
+                album, tracker, torrents_dir, **tracker_config
                 )
             if user_selection_type == user_selection_types.NO_ITEMS_TO_SELECT_FROM:
                 skipped_titles_file_writer.writerow({
@@ -309,7 +294,7 @@ def main(config):
     download_albums_by_titles(
         titles_to_download, metadata_database, tracker,
         os.path.expanduser(config['tracker']['output_directory']),
-        config['ui']
+        **tracker_settings
         )
 
 if __name__ == '__main__':

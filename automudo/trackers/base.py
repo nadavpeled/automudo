@@ -1,4 +1,5 @@
 import re
+import math
 import difflib
 from collections import namedtuple
 
@@ -43,64 +44,46 @@ class Tracker(object):
         self.__session = requests.Session()
         self.__http_headers = {'User-Agent': user_agent}
 
+    def find_best_torrent_by_keywords(self, *args, **kwargs):
+        torrents = self.find_torrents_by_keywords(*args, **kwargs)
+        if torrents is None:
+            return None
+
+        torrents = list(torrents)
+        if not torrents:
+            return None
+
+        filters = [self._filter_lower_sized_torrents,
+                   self._filter_by_seeders_amount]
+        while filters and len(torrents) > 1:
+            filtered_torrents = list(filters[0](torrents))
+            del filters[0]
+
+            if len(filtered_torrents) > 0:
+                # There are torrents that passed the filter.
+                torrents = filtered_torrents
+
+        return torrents[0]
+
     def find_torrents_by_keywords(self, keywords,
-                                  allow_fancy_releases=None,
-                                  should_sequence_match=True,
+                                  allow_fancy_releases=False,
+                                  allow_remasters=False,
                                   **kwargs):
         """
         Finds torrents given a keywords list
         and returns their identifiers in the tracker.
         """
         torrents = self._find_torrents_by_keywords(
-            keywords, allow_fancy_releases, kwargs
+            keywords, allow_fancy_releases=allow_fancy_releases, **kwargs
             )
-        for torrent in torrents:
-            if (self._is_fancy_release(torrent.title) and
-                    not allow_fancy_releases):
-                continue
+        if not allow_fancy_releases:
+            torrents = self._filter_non_fancy_torrents(torrents)
+        if not allow_remasters:
+            torrents = self._filter_non_remasters_torrents(torrents)
+        torrents = self._filter_accurate_torrents(torrents, keywords)
+        return torrents
 
-            # Make sure that all of the keywords appear
-            # and do not overlap each other.
-            torrent_title = torrent.title
-            all_keywords_were_found = True
-            searched_string_part = ""
-            for keyword in keywords:
-                if not keyword in torrent_title:
-                    all_keywords_were_found = False
-                    break
-                keyword_end_index = torrent_title.find(keyword) + len(keyword)
-                searched_string_part += torrent_title[:keyword_end_index]
-                torrent_title = torrent_title.replace(keyword, "", 1)
-
-            if all_keywords_were_found:
-                if not should_sequence_match:
-                    yield torrent
-                    continue
-
-                # Verify that the shortest prefix that contains all keywords
-                # is likely to matche the keywords as a sequence.
-                normalized_torrent_title = \
-                    MusicMetadataDatabase.normalize_music_description(
-                        searched_string_part
-                        )
-                normalized_keywords_string = \
-                    MusicMetadataDatabase.normalize_music_description(
-                        " ".join(keywords)
-                        )
-                match_ratio = difflib.SequenceMatcher(
-                    a=normalized_torrent_title,
-                    b=normalized_keywords_string
-                    ).ratio()
-                if match_ratio > 0.6:
-                    yield torrent
-
-    @staticmethod
-    def _has_torrent_content_type(headers):
-        """
-        Checks if the content type specified in
-        the given HTTP headers is of a torrent
-        """
-        return "application/x-bittorrent" in headers.get('Content-Type', "")
+    # TORRENT FILTERS:
 
     @staticmethod
     def _is_fancy_release(title):
@@ -115,6 +98,92 @@ class Tracker(object):
                 "5.1" in lowercase_title or
                 "dvd" in lowercase_title or
                 "vinyl" in lowercase_title)
+
+    @classmethod
+    def _filter_non_fancy_torrents(cls, torrents):
+        for torrent in torrents:
+            if not cls._is_fancy_release(torrent.title):
+                yield torrent
+
+    @staticmethod
+    def _filter_non_remasters_torrents(torrents):
+        for torrent in torrents:
+            if "remaster" not in torrent.title.lower():
+                yield torrent
+
+    @staticmethod
+    def _filter_accurate_torrents(torrents, keywords):
+        for torrent in torrents:
+            # Make sure that all of the keywords appear
+            # and do not overlap each other.
+            torrent_title = MusicMetadataDatabase.normalize_music_description(
+                torrent.title
+                )
+            all_keywords_were_found = True
+            searched_string_part = ""
+            for keyword in keywords:
+                normalized_keyword = \
+                    MusicMetadataDatabase.normalize_music_description(keyword)
+                if normalized_keyword not in torrent_title:
+                    all_keywords_were_found = False
+                    break
+                keyword_end_index = (torrent_title.find(normalized_keyword) +
+                                     len(normalized_keyword))
+                searched_string_part += torrent_title[:keyword_end_index]
+                torrent_title = torrent_title.replace(normalized_keyword, "", 1)
+
+            if not all_keywords_were_found:
+                continue
+
+            # Verify that the shortest prefix that contains all keywords
+            # is likely to matche the keywords as a sequence.
+            normalized_torrent_title = \
+                MusicMetadataDatabase.normalize_music_description(
+                    searched_string_part
+                    )
+            normalized_keywords_string = \
+                MusicMetadataDatabase.normalize_music_description(
+                    " ".join(keywords)
+                    )
+            match_ratio = difflib.SequenceMatcher(
+                a=normalized_torrent_title,
+                b=normalized_keywords_string
+                ).ratio()
+            if match_ratio > 0.6:
+                yield torrent
+
+    @staticmethod
+    def _filter_lower_sized_torrents(torrents):
+        torrents_sorted_by_size = \
+            sorted(torrents, key=lambda t: t.size_in_bytes)
+
+        if len(torrents_sorted_by_size) == 1:
+            return torrents_sorted_by_size
+        else:
+            min_size = torrents_sorted_by_size[0].size_in_bytes
+            return [t for t in torrents_sorted_by_size
+                    if t.size_in_bytes <= (min_size * 3 / 2)]
+
+    @staticmethod
+    def _filter_by_seeders_amount(torrents):
+        torrents_sorted_by_seeders = \
+            sorted(torrents, key=lambda torrent: torrent.seeders,
+                   reverse=True)
+
+        if len(torrents_sorted_by_seeders) == 1:
+            return torrents_sorted_by_seeders
+        else:
+            return torrents_sorted_by_seeders[:-int(len(torrents)/2)]
+
+    # WORK AGAINST THE TRACKER:
+
+    @staticmethod
+    def _has_torrent_content_type(headers):
+        """
+        Checks if the content type specified in
+        the given HTTP headers is of a torrent
+        """
+        return "application/x-bittorrent" in headers.get('Content-Type', "")
 
     def _is_authenticated_user_response(self, response):
         """
