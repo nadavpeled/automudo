@@ -56,7 +56,7 @@ class MusicMetadataDatabase(object):
             Returns:
                 iterable of (album, probability) tuples of good matches.
         """
-        normalized_search_string = self._normalize_album_search_string(
+        normalized_search_string = self.normalize_music_description(
             search_string
             )
         master_releases = self._find_album(normalized_search_string, True)
@@ -96,9 +96,9 @@ class MusicMetadataDatabase(object):
         return max(album_match_probability, best_track_match_probability)
 
     @classmethod
-    def _normalize_album_search_string(cls, search_string):
+    def normalize_music_description(cls, description_string):
         """
-        "Normalizes" an album search string, by performing the following:
+        "Normalizes" a music-description string, by performing the following:
         1. lowercasing it
         2. removing useless words from it (album, full album, youtube, ..)
         3. replacing multiple whitespaces with a single whitespace
@@ -108,23 +108,24 @@ class MusicMetadataDatabase(object):
               contain special characters.
               The metadata databases can usually handle it.
         """
-        search_string = search_string.lower()
+        description_string = description_string.lower()
 
         # Remove comments.
-        search_string = re.sub(
-            r"(\([^\)]*\)|\{[^\}]*\}|\[[^\]]*\])", "", search_string
+        description_string = re.sub(
+            r"(\([^\)]*\)|\{[^\}]*\}|\[[^\]]*\])", "", description_string
             )
 
         for regex in cls.__UNWANTED_KEYWORDS_REGEXES:
-            search_string = regex.sub("", search_string)
+            description_string = regex.sub("", description_string)
 
         # Remove characters which are not letters or numbers.
-        search_string = re.sub(r"(\s|^)[_\W]+(\s|$)", " ", search_string)
+        description_string = re.sub(r"(\s|^)[_\W]+(\s|$)", " ",
+                                    description_string)
 
         # Replace sequences of spaces and tabs with a single space.
-        search_string = re.sub(r"\s+", " ", search_string)
+        description_string = re.sub(r"\s+", " ", description_string)
 
-        return search_string.strip()
+        return description_string.strip()
 
     def _find_album(self, search_string, master_releases_only):
         """

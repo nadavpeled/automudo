@@ -1,7 +1,10 @@
 import re
+import difflib
 from collections import namedtuple
 
 import requests
+
+from automudo.music_metadata_databases.base import MusicMetadataDatabase
 
 
 class TrackerLoginError(Exception):
@@ -41,7 +44,9 @@ class Tracker(object):
         self.__http_headers = {'User-Agent': user_agent}
 
     def find_torrents_by_keywords(self, keywords,
-                                  allow_fancy_releases=None, **kwargs):
+                                  allow_fancy_releases=None,
+                                  should_sequence_match=True,
+                                  **kwargs):
         """
         Finds torrents given a keywords list
         and returns their identifiers in the tracker.
@@ -53,7 +58,41 @@ class Tracker(object):
             if (self._is_fancy_release(torrent.title) and
                     not allow_fancy_releases):
                 continue
-            yield torrent
+
+            # Make sure that all of the keywords appear
+            # and do not overlap each other.
+            torrent_title = torrent.title
+            all_keywords_were_found = True
+            searched_string_part = ""
+            for keyword in keywords:
+                if not keyword in torrent_title:
+                    all_keywords_were_found = False
+                    break
+                keyword_end_index = torrent_title.find(keyword) + len(keyword)
+                searched_string_part += torrent_title[:keyword_end_index]
+                torrent_title = torrent_title.replace(keyword, "", 1)
+
+            if all_keywords_were_found:
+                if not should_sequence_match:
+                    yield torrent
+                    continue
+
+                # Verify that the shortest prefix that contains all keywords
+                # is likely to matche the keywords as a sequence.
+                normalized_torrent_title = \
+                    MusicMetadataDatabase.normalize_music_description(
+                        searched_string_part
+                        )
+                normalized_keywords_string = \
+                    MusicMetadataDatabase.normalize_music_description(
+                        " ".join(keywords)
+                        )
+                match_ratio = difflib.SequenceMatcher(
+                    a=normalized_torrent_title,
+                    b=normalized_keywords_string
+                    ).ratio()
+                if match_ratio > 0.6:
+                    yield torrent
 
     @staticmethod
     def _has_torrent_content_type(headers):
