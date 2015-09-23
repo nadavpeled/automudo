@@ -112,10 +112,39 @@ class Tracker(object):
                 if login_attempts == 2:
                     raise exception
 
-    def find_torrents_by_keywords(self, keywords):
+    def find_torrents_by_keywords(self, keywords,
+                                  allow_fancy_releases=None, **kwargs):
         """
         Finds torrents given a keywords list
         and returns their identifiers in the tracker.
+        """
+        torrents = self._find_torrents_by_keywords(
+            keywords, allow_fancy_releases, kwargs
+            )
+        for torrent in torrents:
+            if (self._is_fancy_release(torrent.title) and
+                    not allow_fancy_releases):
+                continue
+            yield torrent
+
+    @staticmethod
+    def _is_fancy_release(title):
+        """
+        Checks if a torrent's title is for a fancy album release.
+        """
+        lowercase_title = title.lower()
+        return (re.search(r"24([\W\s]+192|[\W\s]*bit)", lowercase_title) or
+                re.search(r"180[\W\s]*gram", lowercase_title) or
+                "sacd" in lowercase_title or
+                "dsd" in lowercase_title or
+                "5.1" in lowercase_title or
+                "dvd" in lowercase_title or
+                "vinyl" in lowercase_title)
+
+    def _find_torrents_by_keywords(self, keywords,
+                                   allow_fancy_releases=None, **kwargs):
+        """
+        Tracker-specific implementation for find_torrents_by_keywords.
         """
         raise NotImplementedError()
 

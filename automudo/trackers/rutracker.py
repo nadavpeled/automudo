@@ -48,21 +48,6 @@ class Rutracker(Tracker):
         if not self._is_authenticated_user_response(response):
             raise TrackerLoginError("Could not login to rutracker.")
 
-    @staticmethod
-    def _is_fancy_release(torrent_title):
-        """
-        Returns True if the given title describes
-        a fancy release, False otherwise.
-        """
-        lowercase_title = torrent_title.lower()
-        return (re.search(r"24([\W\s]+192|[\W\s]*bit)", lowercase_title) or
-                re.search(r"180[\W\s]*gram", lowercase_title) or
-                "sacd" in lowercase_title or
-                "dsd" in lowercase_title or
-                "5.1" in lowercase_title or
-                "dvd" in lowercase_title or
-                "vinyl" in lowercase_title)
-
     def _extract_torrents_from_html(
             self, html_string,
             data_compression_type, allow_fancy_releases
@@ -115,17 +100,13 @@ class Rutracker(Tracker):
                      not category.endswith("lossless)"))):
                 continue
 
-            if (self._is_fancy_release(title) and
-                    not allow_fancy_releases):
-                continue
-
             yield TorrentDetails(title=title,
                                  seeders=seeders, leechers=leechers,
                                  size_in_bytes=size_in_bytes,
                                  category=category, torrent_id=torrent_id,
                                  tracker_name=self.name)
 
-    def find_torrents_by_keywords(
+    def _find_torrents_by_keywords(
             self, keywords,
             data_compression_type=None, allow_fancy_releases=None
             ):
