@@ -32,11 +32,21 @@ def find_torrent_for_album(album, tracker,
         "For:",
         cui.get_printable_string(" - ".join([album.artist, album.title]))
         )
+
+    # Try to search: "artist title".
+    # If no results, search: "artist" "title".
     torrent = tracker.find_best_torrent_by_keywords(
-        [album.artist, album.title],
+        [" ".join([album.artist, album.title])],
         allow_fancy_releases=allow_fancy_releases,
         allow_remasters=allow_remasters
         )
+    if torrent is None:
+        torrent = tracker.find_best_torrent_by_keywords(
+            [album.artist, album.title],
+            allow_fancy_releases=allow_fancy_releases,
+            allow_remasters=allow_remasters
+            )
+
     if torrent is None:
         print("No matching torrents were found.")
         user_selection_type = user_selection_types.NO_ITEMS_TO_SELECT_FROM
