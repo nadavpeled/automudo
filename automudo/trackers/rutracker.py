@@ -94,22 +94,26 @@ class Rutracker(Tracker):
                     leechers = int(search_html_tag_by_type("b", cell))
 
             # Verify that the user's requested compression type is matched.
-            # Forums in Rutracker have 4 possible suffixes:
+            # Forums in Rutracker have quite a few possible suffixes:
             # 1. "(lossy)" for lossy-only forum
             # 2. "(lossless)" for lossless-only forum
             # 3. "(lossy и lossless)" for forum with lossy and lossless music
             #    (used in sub-forums for unpopular music)
-            # 4. No suffix, for "special" lossless music (vinyl, 5.1, ..)
+            # 4. Музыка Lossless (ALAC)
+            # 5. Музыка Lossy (ALAC)
+            # 6. No suffix, for "special" lossless music (vinyl, 5.1, ..)
             #    or non-music contents.
             data_compression_type = data_compression_type.lower()
             if ((data_compression_type == "lossy" and
-                 "lossy" not in category) or
+                 "lossy" not in category.lower()) or
                     (data_compression_type == "lossless" and
                      allow_fancy_releases and
-                     category.endswith("(lossy)")) or
+                     (category.endswith("(lossy)") or
+                      "Музыка Lossy" in category)) or
                     (data_compression_type == "lossless" and
                      not allow_fancy_releases and
-                     not category.endswith("lossless)"))):
+                     not category.endswith("lossless)") and
+                     "Музыка Lossless" not in category)):
                 continue
 
             yield TorrentDetails(title=title,

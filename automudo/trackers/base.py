@@ -130,7 +130,9 @@ class Tracker(object):
                 keyword_end_index = (torrent_title.find(normalized_keyword) +
                                      len(normalized_keyword))
                 searched_string_part += torrent_title[:keyword_end_index]
-                torrent_title = torrent_title.replace(normalized_keyword, "", 1)
+                torrent_title = torrent_title.replace(
+                    normalized_keyword, "", 1
+                    )
 
             if not all_keywords_were_found:
                 continue
