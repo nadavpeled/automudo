@@ -21,6 +21,7 @@ class Rutracker(Tracker):
             config - tracker configuration
         """
         super(Rutracker, self).__init__(config['user_agent'])
+
         self.__username = config['username']
         self.__password = config['password']
         self.__allow_fancy_releases = config['allow_fancy_releases']

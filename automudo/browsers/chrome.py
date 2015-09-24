@@ -15,7 +15,7 @@ class ChromeBrowser(Browser):
         """
             Initializes the ChromeBrowser instance.
         """
-        pass
+        super(ChromeBrowser, self).__init__()
 
     def get_all_bookmarks(self):
         """

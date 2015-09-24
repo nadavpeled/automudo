@@ -16,6 +16,8 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
         """
             Initializes the DiscogsMetadataDatabase instance.
         """
+        super(DiscogsMetadataDatabase, self).__init__()
+
         if not user_agent:
             raise ValueError("user-agent not specified")
         elif not api_key:
