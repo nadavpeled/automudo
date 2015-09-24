@@ -39,6 +39,16 @@ class Rutracker(Tracker):
                                   cookies={'bb_dl': str(torrent_id)},
                                   headers=referer_header)
 
+    def find_best_discography_torrent(self, artist, *args, **kwargs):
+        for keyword in ["дискография", "discography", "cd", "studio", "complete"]:
+            torrent = self.find_best_torrent_by_keywords(
+                [artist, keyword], *args,
+                look_for_discography=True, **kwargs
+                )
+            if torrent is not None:
+                break
+        return torrent
+
     def _is_authenticated_user_response(self, response):
         """
             Implementation for Tracker._is_authenticated_user_response .

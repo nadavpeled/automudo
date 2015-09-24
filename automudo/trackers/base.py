@@ -44,7 +44,10 @@ class Tracker(object):
         self.__session = requests.Session()
         self.__http_headers = {'User-Agent': user_agent}
 
-    def find_best_torrent_by_keywords(self, *args, **kwargs):
+    def find_best_torrent_by_keywords(self,
+                                      *args,
+                                      look_for_discography=False,
+                                      **kwargs):
         torrents = self.find_torrents_by_keywords(*args, **kwargs)
         if torrents is None:
             return None
@@ -53,8 +56,16 @@ class Tracker(object):
         if not torrents:
             return None
 
-        filters = [self._filter_lower_sized_torrents,
-                   self._filter_by_seeders_amount]
+        if look_for_discography:
+            filters = [
+                self._filter_by_seeders_amount,
+                self._filter_higher_sized_torrents
+                ]
+        else:
+            filters = [
+                self._filter_lower_sized_torrents,
+                self._filter_by_seeders_amount
+            ]
         while filters and len(torrents) > 1:
             filtered_torrents = list(filters[0](torrents))
             del filters[0]
@@ -82,6 +93,19 @@ class Tracker(object):
             torrents = self._filter_non_remasters_torrents(torrents)
         torrents = self._filter_accurate_torrents(torrents, keywords)
         return torrents
+
+    def find_best_discography_torrent(self, artist, *args, **kwargs):
+        """
+        Finds the best discography torrent for the given album
+        and returns its identifier in the tracker.
+        """
+        raise NotImplementedError()
+
+    def get_torrent_file_contents(self, torrent_id):
+        """
+        Returns the contents of the torrent file with the given identifier.
+        """
+        raise NotImplementedError()
 
     # TORRENT FILTERS:
 
@@ -165,6 +189,18 @@ class Tracker(object):
             min_size = torrents_sorted_by_size[0].size_in_bytes
             return [t for t in torrents_sorted_by_size
                     if t.size_in_bytes <= (min_size * 3 / 2)]
+
+    @staticmethod
+    def _filter_higher_sized_torrents(torrents):
+        torrents_sorted_by_size = \
+            sorted(torrents, key=lambda t: t.size_in_bytes,
+                   reverse=True)
+
+        if len(torrents_sorted_by_size) == 1:
+            return torrents_sorted_by_size
+        else:
+            end_index = math.ceil(len(torrents_sorted_by_size)/2)
+            return torrents_sorted_by_size[:end_index]
 
     @staticmethod
     def _filter_by_seeders_amount(torrents):
@@ -255,11 +291,5 @@ class Tracker(object):
                                    allow_fancy_releases=None, **kwargs):
         """
         Tracker-specific implementation for find_torrents_by_keywords.
-        """
-        raise NotImplementedError()
-
-    def get_torrent_file_contents(self, torrent_id):
-        """
-        Returns the contents of the torrent file with the given identifier.
         """
         raise NotImplementedError()

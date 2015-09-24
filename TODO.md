@@ -9,7 +9,7 @@
 - [x] Make album matching more autonomous
 - [x] Make torrent matching more autonomous
 - [ ] Remove bookmarks of already downloaded albums
-- [ ] Look for discography when there are no matches in the tracker
+- [x] Look for discography when there are no matches in the tracker
 - [ ] Let the user manually enter album details instead of using a metadata db
 - [x] Change the configuration file format
 - [x] Unix support

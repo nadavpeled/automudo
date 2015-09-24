@@ -46,6 +46,13 @@ def find_torrent_for_album(album, tracker,
             allow_fancy_releases=allow_fancy_releases,
             allow_remasters=allow_remasters
             )
+    if torrent is None:
+        print("No matching torrents. Looking for discography..")
+        torrent = tracker.find_best_discography_torrent(
+            album.artist,
+            allow_fancy_releases=allow_fancy_releases,
+            allow_remasters=allow_remasters
+            )
 
     if torrent is None:
         print("No matching torrents were found.")
