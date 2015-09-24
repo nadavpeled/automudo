@@ -65,8 +65,6 @@ def download_album_torrent(album, tracker, torrents_dir, **tracker_config):
 
     Returns:
         user_selection_types of the torrent selection.
-
-    Note: might interacts with the user for selecting a matching torrent.
     """
     user_selection_type, torrent_details = find_torrent_for_album(
         album, tracker, **tracker_config
@@ -105,32 +103,7 @@ def get_titles_of_downloaded_albums():
         pass  # The downloads file does not exist.
 
 
-def get_album_details_from_user():
-    """
-        Gets album details from the user.
-        The user may choose to skip.
-
-        Returns:
-            (user-selection-type, album-metadata).
-    """
-    artist_name = input(
-        "Who is the artist? (Enter - skip, . - permanent skip): "
-        )
-    if artist_name.strip() == ".":
-        return (user_selection_types.PERMANENT_SKIP_REQUESTED, None)
-    elif not artist_name.strip():
-        return (user_selection_types.SKIPPED_SELECTION, None)
-    album_title = input("What is the album title? ")
-    print()
-
-    return (user_selection_types.ITEM_SELECTED,
-            MusicMetadata(artist=artist_name, title=album_title,
-                          genres=[], date=None, formats=None,
-                          release_id="", metadata_database_name="manual",
-                          tracks=[]))
-
-
-def find_album_or_ask_user(title, metadata_database):
+def find_album_in_database(title, metadata_database):
     """
         Looks for an album by title in the given metadata database.
         If no matching albums were found, asks the user for help.
@@ -145,21 +118,21 @@ def find_album_or_ask_user(title, metadata_database):
     possible_matches = metadata_database.find_album(title)
     # find_album only returns good matches, simply take the first.
     first_match = next(possible_matches, None)
-    if not first_match:
-        print("Couldn't find metadata for album.")
-        album_details = get_album_details_from_user()
-        print()
-        return album_details
-
-    album, probability = first_match
-    print(cui.get_printable_string(
-        'Match [{:.2%}]:  {} - {}'.format(
-            probability, album.artist, album.title
-            )
-        ))
+    if first_match is None:
+        print("Couldn't find metadata for album. Skipping..")
+        user_selection_type = user_selection_types.NO_ITEMS_TO_SELECT_FROM
+        album = None
+    else:
+        user_selection_type = user_selection_types.ITEM_SELECTED
+        album, probability = first_match
+        print(cui.get_printable_string(
+            'Match [{:.2%}]:  {} - {}'.format(
+                probability, album.artist, album.title
+                )
+            ))
     print()
     print()
-    return (user_selection_types.ITEM_SELECTED, album)
+    return (user_selection_type, album)
 
 
 def download_albums_by_titles(titles_to_download, metadata_database,
@@ -192,19 +165,17 @@ def download_albums_by_titles(titles_to_download, metadata_database,
             skipped_titles_file_writer.writeheader()
 
         for title in titles_to_download:
-            user_selection_type, album = find_album_or_ask_user(
+            user_selection_type, album = find_album_in_database(
                 title, metadata_database
                 )
-            if user_selection_type == user_selection_types.PERMANENT_SKIP_REQUESTED:
+            if user_selection_type == user_selection_types.NO_ITEMS_TO_SELECT_FROM:
                 skipped_titles_file_writer.writerow({
                     'bookmark-title': title,
                     'release-id': "",
-                    'metadata-database-name': "",
-                    'reason': "permanent skip requested"
+                    'metadata-database-name': metadata_database.name,
+                    'reason': "no matching albums"
                     })
-                continue
-            elif user_selection_type == user_selection_types.SKIPPED_SELECTION:
-                continue  # Skip the torrent downloading as well.
+                continue  # Skips the torrent downloading as well.
 
             assert user_selection_type == user_selection_types.ITEM_SELECTED
 
@@ -273,7 +244,6 @@ def main(config):
         )
     metadata_database = create_music_metadata_database(
         database_name, user_agent=config['advanced']['user_agent'],
-        max_results=config['ui']['items_per_page'],
         **database_settings
         )
 

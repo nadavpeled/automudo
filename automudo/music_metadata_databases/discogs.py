@@ -12,7 +12,7 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
     """
     name = "discogs"
 
-    def __init__(self, user_agent=None, api_key=None, max_results=None):
+    def __init__(self, user_agent=None, api_key=None):
         """
             Initializes the DiscogsMetadataDatabase instance.
         """
@@ -23,7 +23,6 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
 
         self.__user_agent = user_agent
         self.__api_key = api_key
-        self.__max_results = max_results if max_results else 3
 
     @staticmethod
     def _rank_release_formats(formats):
@@ -32,6 +31,8 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             The better the formats, the lower the rank.
         """
         formats = [str.lower(f) for f in formats]
+        if "dvd" in formats:
+            return 6
         if "unofficial release" in formats:
             return 5
         elif "single" in formats:
@@ -43,7 +44,7 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
         else:
             return 1
 
-    def _find_album(self, search_string, master_releases):
+    def _find_album(self, search_string, master_releases, max_results):
         """
             Implementation for MusicMetadataDatabase._find_album .
         """
@@ -51,7 +52,7 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
         params = {'token': self.__api_key,
                   'type': "master" if master_releases else "release",
                   'q': search_string,
-                  'per_page': self.__max_results,
+                  'per_page': max_results,
                   'page': 1}
         search_response = requests.get(
             "https://api.discogs.com/database/search",
@@ -84,6 +85,10 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
             i = artist.lower().find(', the')
             if i > 0:
                 artist = artist[:i]
+
+            # Remove "The " from the beginning of the artist name.
+            if artist.lower().startswith('the '):
+                artist = artist.partition('the ')[2]
 
             # Discogs distinguishes between multiple artists
             # with the same name by writing a numeric identifer

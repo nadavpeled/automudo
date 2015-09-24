@@ -1,7 +1,4 @@
 # For basic usage, look for CAPITALIZED-WORDS and replace them with real values.
-ui:
-  # Items shown in each page of search results.
-  items_per_page: 3
 browser:
   use: chrome
   browsers:
