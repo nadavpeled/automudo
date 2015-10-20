@@ -5,6 +5,7 @@ from .base import Tracker, TrackerLoginError, TorrentDetails
 from ..utils.data_sizes import parse_data_size_string
 from ..utils.html_parse import \
     find_html_tags_by_type, search_html_tag_by_type, get_text
+from ..utils.throttle import throttle
 
 
 class Rutracker(Tracker):
@@ -133,6 +134,7 @@ class Rutracker(Tracker):
                                  category=category, torrent_id=torrent_id,
                                  tracker_name=self.name)
 
+    @throttle(seconds=3)
     def _find_torrents_by_keywords(
             self, keywords,
             data_compression_type=None, allow_fancy_releases=None

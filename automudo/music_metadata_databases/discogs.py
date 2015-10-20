@@ -97,9 +97,17 @@ class DiscogsMetadataDatabase(MusicMetadataDatabase):
         tracks = []
         for track in album_details.get('tracklist', []):
             if track['duration']:
-                minute, second = map(int, track['duration'].split(':'))
-                hour = int(minute / 60)
-                minute = minute % 60
+                duration_parts = [int(p) for p in track['duration'].split(':')]
+                if len(duration_parts) == 3:
+                    hour, minute, second = duration_parts
+                else:
+                    if len(duration_parts) == 2:
+                        second = 60 * duration_parts[0] + duration_parts[1]
+                    else:
+                        second = duration_parts[0]
+                    hour = (second // 60) // 60
+                    minute = (second // 60) % 60
+                    second = second % 60
                 duration = datetime.time(hour=hour,
                                          minute=minute,
                                          second=second)
