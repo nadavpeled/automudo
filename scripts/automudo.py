@@ -1,6 +1,7 @@
 #! python3
 import os
 import re
+import sys
 import csv
 import itertools
 
@@ -244,7 +245,7 @@ def read_selection_field_from_config(config, field_name):
     return (selected, settings_for_selected)
 
 
-def main(config):
+def main(config, keywords):
     """
         The entry point of the automudo program.
     """
@@ -278,6 +279,10 @@ def main(config):
         set(user_music_bookmarks_titles) - set(already_downloaded_titles)
         )
 
+    titles_to_download = [title for title in titles_to_download
+                          if all([keyword.lower() in title.lower()
+                                  for keyword in keywords])]
+
     download_albums_by_titles(
         titles_to_download, metadata_database, tracker,
         os.path.expanduser(config['tracker']['output_directory']),
@@ -289,6 +294,9 @@ if __name__ == '__main__':
         config_dict = yaml.load(config_file)
 
     try:
-        main(config_dict)
+        keywords = []
+        if len(sys.argv) > 1:
+            keywords = sys.argv[1:]
+        main(config_dict, keywords)
     except KeyboardInterrupt:
         print("Good bye!")
